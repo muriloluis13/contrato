@@ -5,119 +5,412 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simulador de rentabilidade contratual</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
-    :root { --bg:#ffffff; --text:#111827; --muted:#6b7280; --card:#ffffff; --bd:#e5e7eb; --accent:#111827; }
-    html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-    /* === LANDING SCREEN === */
-    #landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#f0f4f8 0%,#e8edf5 40%,#dfe6f0 100%);position:relative;overflow:hidden;}
-    #landing::before{content:'';position:absolute;top:-120px;left:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(100,150,255,.15),transparent 70%);pointer-events:none;}
-    #landing::after{content:'';position:absolute;bottom:-100px;right:-100px;width:350px;height:350px;background:radial-gradient(circle,rgba(160,120,255,.12),transparent 70%);pointer-events:none;}
-    .landing-title{font-size:32px;font-weight:700;letter-spacing:-.03em;margin-bottom:64px;color:#1a1a2e;text-align:center;}
-    .landing-sub{font-size:13px;color:var(--muted);margin-bottom:48px;text-align:center;letter-spacing:.02em;}
-    .landing-btns{display:flex;gap:20px;}
-    @media(max-width:600px){.landing-btns{flex-direction:column;gap:14px;}}
-    .glass-btn{position:relative;width:220px;padding:28px 24px;border:none;border-radius:24px;font-size:16px;font-weight:600;letter-spacing:.01em;cursor:pointer;color:#1a1a2e;text-align:center;background:rgba(255,255,255,.5);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);border:1.5px solid rgba(255,255,255,.6);box-shadow:0 8px 32px rgba(31,38,135,.1),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
-    .glass-btn:hover{transform:translateY(-3px);background:rgba(255,255,255,.65);box-shadow:0 14px 44px rgba(31,38,135,.16),inset 0 1px 0 rgba(255,255,255,.8);}
-    .glass-btn:active{transform:translateY(0);box-shadow:0 4px 14px rgba(31,38,135,.08);}
-    .glass-btn .btn-icon{font-size:28px;display:block;margin-bottom:8px;}
-    .glass-btn .btn-label{font-size:15px;letter-spacing:.02em;}
-    #app-financeiro,#app-comercial{display:none;}
-    /* Modal senha */
-    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;}
-    .modal-overlay.active{display:flex;}
-    .modal-box{width:320px;padding:32px 28px;border-radius:24px;background:rgba(255,255,255,.6);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border:1.5px solid rgba(255,255,255,.65);box-shadow:0 16px 48px rgba(31,38,135,.15);text-align:center;}
-    .modal-box h3{font-size:16px;font-weight:700;margin:0 0 6px;color:#1a1a2e;}
-    .modal-box p{font-size:12px;color:var(--muted);margin:0 0 20px;}
-    .modal-input{width:100%;padding:12px 14px;border:1.5px solid rgba(200,200,210,.5);border-radius:14px;font-size:14px;background:rgba(255,255,255,.5);outline:none;box-sizing:border-box;transition:border-color .2s;}
-    .modal-input:focus{border-color:rgba(100,150,255,.6);}
-    .modal-error{font-size:12px;color:#dc2626;margin-top:8px;min-height:18px;}
-    .modal-actions{display:flex;gap:10px;margin-top:18px;}
-    .modal-actions button{flex:1;padding:11px 0;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;}
-    .modal-cancel{border:1.5px solid rgba(200,200,210,.5);background:rgba(255,255,255,.4);color:#6b7280;}
-    .modal-cancel:hover{background:rgba(255,255,255,.6);}
-    .modal-confirm{border:none;background:#1a1a2e;color:#fff;box-shadow:0 4px 16px rgba(26,26,46,.2);}
-    .modal-confirm:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(26,26,46,.28);}
-    .back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;padding:4px 0;margin-bottom:12px;transition:color .15s;}
-    .back-link:hover{color:var(--text);}
-    .dev-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;color:var(--muted);font-size:18px;gap:12px;}
-    .sf-input{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;font-size:13px;box-sizing:border-box;}
-    .sf-sep{border-top:1px solid var(--bd);margin:14px 0;padding-top:10px;}
-    .sf-sep span{font-weight:600;}
-    .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    .muted { color: var(--muted); font-size: 12px; }
-    .tabs { display:inline-flex; border:1px solid var(--bd); border-radius: 14px; overflow:hidden; margin: 16px 0 20px; background:#fff; }
-    .tabbtn { padding:10px 14px; font-size: 13px; border:0; background:#fff; color:#374151; cursor:pointer; }
-    .tabbtn.active { background: var(--accent); color:#fff; }
-    .card { background: var(--card); border:1px solid var(--bd); border-radius: 14px; padding: 16px; }
-    .card h2 { font-size: 16px; margin: 0 0 12px; }
-    .card h3 { font-size: 14px; margin: 0 0 12px; font-weight: 600; }
+    /* === Apple Liquid Glass design tokens === */
+    :root {
+      --bg: #f5f5f7;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --card: rgba(255,255,255,.72);
+      --card-border: rgba(255,255,255,.8);
+      --bd: rgba(0,0,0,.06);
+      --accent: #1d1d1f;
+      --glass-blur: 20px;
+      --glass-saturate: 1.4;
+      --radius: 20px;
+      --radius-sm: 14px;
+      --shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.04);
+      --inner-glow: inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* === App financeiro: fundo em camadas (liquid glass) === */
+    #app-financeiro {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #fafafa 0%, #f0f0f5 50%, #e8e8ed 100%);
+      position: relative;
+    }
+    #app-financeiro::before {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120,119,198,.08), transparent),
+                  radial-gradient(ellipse 60% 40% at 100% 50%, rgba(99,102,241,.05), transparent),
+                  radial-gradient(ellipse 50% 30% at 0% 80%, rgba(139,92,246,.05), transparent);
+      pointer-events: none; z-index: 0;
+    }
+    #app-financeiro .wrap { position: relative; z-index: 1; }
+
+    /* === LANDING === */
+    #landing {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(165deg, #f5f5f7 0%, #ebebf0 35%, #e2e2e8 100%);
+      position: relative; overflow: hidden;
+    }
+    #landing::before {
+      content: ''; position: absolute; top: -20%; left: -10%; width: 50%; height: 60%;
+      background: radial-gradient(circle, rgba(120,119,198,.12), transparent 60%);
+      pointer-events: none;
+    }
+    #landing::after {
+      content: ''; position: absolute; bottom: -10%; right: -5%; width: 45%; height: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,.08), transparent 55%);
+      pointer-events: none;
+    }
+    .landing-title {
+      font-size: 34px; font-weight: 600; letter-spacing: -.04em; margin-bottom: 64px;
+      color: var(--text); text-align: center; line-height: 1.15;
+    }
+    .landing-sub { font-size: 13px; color: var(--muted); margin-bottom: 48px; text-align: center; }
+    .landing-btns { display: flex; gap: 20px; }
+    @media(max-width:600px){ .landing-btns { flex-direction: column; gap: 14px; } }
+    .glass-btn {
+      position: relative; width: 220px; padding: 28px 24px; border: none; border-radius: 22px;
+      font-size: 16px; font-weight: 600; letter-spacing: -.01em; cursor: pointer; color: var(--text);
+      text-align: center;
+      background: rgba(255,255,255,.55);
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      border: 1px solid rgba(255,255,255,.7);
+      box-shadow: var(--shadow), var(--inner-glow);
+      transition: transform .25s cubic-bezier(.25,.1,.25,1), box-shadow .25s ease, background .25s ease;
+    }
+    .glass-btn:hover {
+      transform: translateY(-4px) scale(1.01);
+      background: rgba(255,255,255,.7);
+      box-shadow: var(--shadow-lg), var(--inner-glow);
+    }
+    .glass-btn:active { transform: translateY(0) scale(1); }
+    .glass-btn .btn-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+    .glass-btn .btn-label { font-size: 15px; }
+    #app-financeiro, #app-comercial { display: none; }
+    #app-comercial {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #fafafa 0%, #f0f0f5 50%, #e8e8ed 100%);
+      position: relative;
+    }
+    #app-comercial::before {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120,119,198,.06), transparent);
+      pointer-events: none; z-index: 0;
+    }
+    #app-comercial .wrap { position: relative; z-index: 1; }
+
+    /* === Modal senha === */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.2);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      width: 340px; padding: 32px 28px; border-radius: 24px;
+      background: rgba(255,255,255,.65);
+      backdrop-filter: blur(28px) saturate(1.6);
+      -webkit-backdrop-filter: blur(28px) saturate(1.6);
+      border: 1px solid rgba(255,255,255,.75);
+      box-shadow: var(--shadow-lg), var(--inner-glow);
+      text-align: center;
+    }
+    .modal-box h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px; color: var(--text); }
+    .modal-box p { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+    .modal-input {
+      width: 100%; padding: 14px 16px; border: 1px solid rgba(0,0,0,.08);
+      border-radius: 14px; font-size: 15px;
+      background: rgba(255,255,255,.6); outline: none; box-sizing: border-box;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .modal-input:focus {
+      border-color: rgba(99,102,241,.4);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+    }
+    .modal-error { font-size: 12px; color: #dc2626; margin-top: 8px; min-height: 18px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+    .modal-actions button {
+      flex: 1; padding: 12px 0; border-radius: 14px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: transform .15s, box-shadow .15s;
+    }
+    .modal-cancel {
+      border: 1px solid rgba(0,0,0,.1);
+      background: rgba(255,255,255,.5);
+      color: var(--muted);
+    }
+    .modal-cancel:hover { background: rgba(255,255,255,.7); }
+    .modal-confirm {
+      border: none; background: var(--accent); color: #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    }
+    .modal-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 14px;
+      color: var(--muted); cursor: pointer; border: none; background: none;
+      padding: 8px 0; margin-bottom: 12px; transition: color .2s;
+    }
+    .back-link:hover { color: var(--text); }
+    .dev-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; color: var(--muted); font-size: 18px; gap: 12px;
+    }
+    .sf-input {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--bd);
+      border-radius: 12px; font-size: 14px; box-sizing: border-box;
+      background: rgba(255,255,255,.5);
+    }
+    .sf-sep { border-top: 1px solid var(--bd); margin: 14px 0; padding-top: 10px; }
+    .sf-sep span { font-weight: 600; }
+
+    /* === Wrap & typography === */
+    .wrap { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+    h1 { font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.02em; }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    /* === Tabs: pill glass === */
+    .tabs {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      padding: 4px;
+      border-radius: 16px;
+      margin: 20px 0 24px;
+      background: rgba(255,255,255,.5);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid rgba(255,255,255,.6);
+      box-shadow: 0 2px 12px rgba(0,0,0,.04), var(--inner-glow);
+    }
+    .tabbtn {
+      flex-shrink: 0;
+      padding: 10px 18px; font-size: 14px; font-weight: 500;
+      border: none; border-radius: 12px;
+      background: transparent; color: var(--muted);
+      cursor: pointer;
+      transition: background .25s ease, color .25s ease;
+    }
+    .tabbtn:hover { color: var(--text); background: rgba(255,255,255,.4); }
+    .tabbtn.active {
+      background: rgba(255,255,255,.9);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+    /* === Cards: liquid glass panels === */
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow), var(--inner-glow);
+    }
+    .card h2 { font-size: 17px; font-weight: 600; margin: 0 0 14px; letter-spacing: -.02em; }
+    .card h3 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
     .row { margin-bottom: 14px; }
-    .row label { display:flex; justify-content:space-between; font-size: 13px; margin-bottom: 6px; }
-    .row input[type="range"] { width:100%; accent-color: #1A73E8; cursor:pointer; touch-action:none; -webkit-user-select:none; user-select:none; }
-    .kpis { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); grid-gap: 16px; }
-    .kpi { border:none; border-radius: 18px; padding: 16px; min-height: 96px; display:flex; flex-direction:column; justify-content:flex-start; color:#000; background:#f5f6f8; box-shadow:0 8px 18px rgba(15,23,42,.08); }
-    .kpi .cap { font-size:11px; color:#000; text-transform:uppercase; letter-spacing:.08em; font-weight:400; }
-    .kpi .val { font-size:18px; font-weight:600; margin-top:4px; color:#000; word-break:break-word; }
-    .kpi .sub { font-size:11px; color:var(--muted); margin-top:4px; }
-    .kpi-ice{background:#e6f2f7;} .kpi-celeste{background:#d6e8f5;} .kpi-sand{background:#f4d48f;}
-    .kpi-blush{background:#fde7da;} .kpi-sage{background:#d7e4d3;} .kpi-stone{background:#e4e7ef;} .kpi-rose{background:#fef7fb;}
-    .pos{color:#059669;} .neg{color:#dc2626;}
-    .scenario-layout{display:flex;flex-direction:column;gap:16px;}
-    /* Painel de premissas: tamanho fixo igual em todas as abas (referência Compagás) */
-    .scenario-premissas{width:100%;min-width:280px;min-height:720px;box-sizing:border-box;order:10;}
-    .scenario-liqvars{order:11;}
-    .scenario-outputs .kpis{grid-template-columns:repeat(3,minmax(0,1fr));grid-gap:12px;}
-    .scenario-outputs .kpi{min-height:88px;padding:12px;}
-    .scenario-outputs .kpi .val{font-size:16px;}
-    .scenario-table{overflow:auto;}
-    .scenario-charts .chart-inner{height:260px;min-width:400px;}
-    @media(min-width:1024px){
-      .scenario-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start;}
-      .scenario-premissas{width:340px;min-width:340px;grid-column:1;grid-row:1 / span 3;order:unset;}
-      .scenario-liqvars{order:unset;}
-      .scenario-outputs{grid-column:2;grid-row:1;min-width:0;}
-      .scenario-table{grid-column:2;grid-row:2;min-width:0;}
-      .scenario-charts{grid-column:2;grid-row:3;min-width:0;}
+    .row label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+    .row .slider-num { width: 5.5em; padding: 4px 8px; font-size: 13px; border: 1px solid rgba(0,0,0,.1); border-radius: 8px; background: rgba(255,255,255,.5); text-align: right; box-sizing: border-box; }
+    .row .slider-num:focus { outline: none; border-color: rgba(99,102,241,.4); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
+    .row input[type="range"] {
+      width: 100%; accent-color: #6366f1; cursor: pointer;
+      touch-action: none; -webkit-user-select: none; user-select: none;
     }
-    table { width:100%; border-collapse: collapse; font-size: 11px; white-space:nowrap; }
-    th, td { text-align:right; padding: 6px 7px; border-top: 1px solid var(--bd); }
-    th:first-child, td:first-child { text-align:left; }
-    th { font-weight:600; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
-    .flex { display:flex; align-items:center; justify-content: space-between; }
-    .small { font-size: 11px; color: var(--muted); }
-    .note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height:1.6; }
-    .note-warn { background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:12px 16px; font-size:12px; color:#dc2626; margin-bottom:16px; line-height:1.5; }
-    .btn { padding: 8px 12px; border:1px solid var(--bd); border-radius: 12px; background:#fff; cursor:pointer; font-size:13px; }
-    .btn-header { padding:6px 10px; font-size:11px; }
-    .btn:hover { background:#f3f4f6; }
-    .hidden { display:none; }
-    .chart-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    .chart-inner { position:relative; height:320px; min-width:600px; }
-    .chart-inner canvas { width:100%!important; height:100%!important; display:block; }
-    /* Consol cards */
-    .consol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:16px;}
-    /* Gráficos da aba Consolidado */
-    .consol-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-    .consol-charts-grid .card{min-width:0;}
-    .consol-charts-grid .chart-scroll{min-width:0;}
-    .consol-charts-grid .chart-inner{height:280px;min-width:280px;}
-    @media(max-width:720px){ .consol-charts-grid{grid-template-columns:1fr;} }
-    .consol-card{background:#f9fafb;border:1px solid var(--bd);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
-    .consol-card h4{font-size:14px;font-weight:700;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--bd);}
-    .consol-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;}
-    .consol-row .lbl{color:var(--muted);}
-    .consol-row .v{font-weight:600;}
-    @media(min-width:720px){ .kpi{min-height:110px;} .kpi .val{font-size:20px;} }
-    @media(max-width:768px){
-      .wrap{padding:0 12px;} .card{padding:12px;} .card h2{font-size:14px;}
-      .kpis{grid-template-columns:repeat(2,1fr);grid-gap:12px;}
-      .kpi{padding:8px 10px;} .kpi .cap{font-size:10px;} .kpi .val{font-size:15px;}
-      table{font-size:11px;} th,td{padding:6px 8px;}
+
+    /* === KPIs: glass cards === */
+    .kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .kpi {
+      position: relative;
+      border-radius: 20px;
+      padding: 20px 22px;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      color: var(--text);
+      overflow: hidden;
+      /* Glass card: translucent + blur */
+      background: rgba(255,255,255,.35);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border: 1px solid rgba(255,255,255,.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.6);
+      transition: transform .25s cubic-bezier(.25,.1,.25,1), box-shadow .25s ease;
     }
-    @media(max-width:480px){
-      .wrap{padding:0 8px;} .card{padding:10px;} table{font-size:10px;} th,td{padding:4px 6px;}
+    .kpi:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: var(--shadow-lg), var(--inner-glow);
+    }
+    .kpi .cap { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 6px; }
+    .kpi .val { font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; word-break: break-word; font-variant-numeric: tabular-nums; }
+    .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,.06); line-height: 1.4; }
+    /* Tinted glass card variants (subtle overlay) */
+    .kpi-ice{ background: rgba(224,242,254,.4); }
+    .kpi-celeste{ background: rgba(219,234,254,.38); }
+    .kpi-sand{ background: rgba(254,243,199,.38); }
+    .kpi-blush{ background: rgba(254,226,226,.4); }
+    .kpi-sage{ background: rgba(220,252,231,.38); }
+    .kpi-stone{ background: rgba(241,245,249,.42); }
+    .kpi-rose{ background: rgba(255,241,242,.38); }
+    .pos { color: #059669; }
+    .neg { color: #dc2626; }
+
+    .scenario-layout { display: flex; flex-direction: column; gap: 18px; }
+    .scenario-premissas {
+      width: 100%; min-width: 280px; min-height: 720px; box-sizing: border-box; order: 10;
+      background: var(--card);
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), var(--inner-glow);
+    }
+    .scenario-liqvars { order: 11; }
+    .scenario-outputs .kpis { gap: 14px; }
+    .scenario-outputs .kpi { min-height: 92px; padding: 16px 18px; border-radius: 18px; }
+    .scenario-outputs .kpi .val { font-size: 17px; }
+    .scenario-outputs .kpi .sub { margin-top: 6px; padding-top: 5px; font-size: 11px; }
+    .scenario-table {
+      overflow: auto;
+      background: var(--card);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), var(--inner-glow);
+    }
+    .scenario-charts .chart-inner { height: 260px; min-width: 400px; }
+    .scenario-charts .card { padding: 18px; }
+    @media(min-width:1024px) {
+      .scenario-layout { display: grid; grid-template-columns: 340px minmax(0,1fr); gap: 18px; align-items: start; }
+      .scenario-premissas { width: 340px; min-width: 340px; grid-column: 1; grid-row: 1 / span 3; order: unset; }
+      .scenario-liqvars { order: unset; }
+      .scenario-outputs { grid-column: 2; grid-row: 1; min-width: 0; }
+      .scenario-table { grid-column: 2; grid-row: 2; min-width: 0; }
+      .scenario-charts { grid-column: 2; grid-row: 3; min-width: 0; }
+    }
+
+    /* === Tables inside glass === */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+    th, td { text-align: right; padding: 10px 12px; border-top: 1px solid rgba(0,0,0,.06); }
+    th:first-child, td:first-child { text-align: left; }
+    th { font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+
+    .flex { display: flex; align-items: center; justify-content: space-between; }
+    .small { font-size: 12px; color: var(--muted); }
+    .note { margin-top: 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .note-warn {
+      background: rgba(254,226,226,.5);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: 14px; padding: 14px 18px; font-size: 13px; color: #dc2626;
+      margin-bottom: 16px; line-height: 1.5;
+    }
+
+    /* === Buttons: glass === */
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,.6);
+      border-radius: 12px;
+      background: rgba(255,255,255,.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04), var(--inner-glow);
+      transition: background .2s, transform .15s, box-shadow .15s;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,.75);
+      box-shadow: 0 4px 12px rgba(0,0,0,.06), var(--inner-glow);
+    }
+    .btn-header { padding: 8px 14px; font-size: 12px; }
+    .btn[style*="background:var(--accent)"],
+    .btn[style*="background:#047857"] {
+      border-color: transparent;
+      color: #fff !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    }
+    .btn[style*="background:var(--accent)"]:hover,
+    .btn[style*="background:#047857"]:hover {
+      box-shadow: 0 6px 18px rgba(0,0,0,.2);
+    }
+
+    .hidden { display: none; }
+    .chart-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .chart-inner { position: relative; height: 320px; min-width: 600px; }
+    .chart-inner canvas { width: 100%!important; height: 100%!important; display: block; }
+
+    /* === Consolidado: consol cards glass === */
+    .consol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .consol-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .consol-charts-grid .card { min-width: 0; }
+    .consol-charts-grid .chart-scroll { min-width: 0; }
+    .consol-charts-grid .chart-inner { height: 280px; min-width: 280px; }
+    @media(max-width:720px){ .consol-charts-grid { grid-template-columns: 1fr; } }
+    .consol-card {
+      background: rgba(255,255,255,.6);
+      backdrop-filter: blur(16px) saturate(1.3);
+      -webkit-backdrop-filter: blur(16px) saturate(1.3);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04), var(--inner-glow);
+    }
+    .consol-card h4 { font-size: 15px; font-weight: 600; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,.06); }
+    .consol-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+    .consol-row .lbl { color: var(--muted); }
+    .consol-row .v { font-weight: 600; }
+
+    /* Selects: glass style */
+    select {
+      background: rgba(255,255,255,.5);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236e6e73' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    @media(min-width:720px){ .kpi { min-height: 110px; } .kpi .val { font-size: 20px; } }
+    @media(max-width:768px) {
+      .wrap { padding: 0 14px; }
+      .tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      .tabs::-webkit-scrollbar { height: 6px; }
+      .tabs::-webkit-scrollbar-track { background: rgba(0,0,0,.04); border-radius: 3px; }
+      .tabs::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
+      .card { padding: 16px; }
+      .card h2 { font-size: 15px; }
+      .kpis { grid-template-columns: repeat(2, 1fr); grid-gap: 12px; }
+      .kpi { padding: 12px 14px; }
+      .kpi .cap { font-size: 10px; }
+      .kpi .val { font-size: 15px; }
+      table { font-size: 11px; }
+      th, td { padding: 8px 10px; }
+    }
+    @media(max-width:480px) {
+      .wrap { padding: 0 12px; }
+      .card { padding: 14px; }
+      table { font-size: 10px; }
+      th, td { padding: 6px 8px; }
     }
   </style>
 </head>
@@ -176,6 +469,7 @@
         <button class="btn btn-header" onclick="showSetupForm()" style="background:var(--accent);color:#fff;border-color:var(--accent);">+ Novo Contrato</button>
         <button class="btn btn-header" onclick="showSetupForm()" type="button">Alterar padrões novos contratos</button>
         <button class="btn btn-header" id="deleteContractBtn" style="display:none;border-color:#dc2626;color:#dc2626;" onclick="deleteCurrentContract()">Excluir contrato</button>
+        <button class="btn btn-header" onclick="exportExcel()" style="background:#047857;color:#fff;border-color:#047857;">📥 Exportar Excel</button>
       </div>
     </div>
 
@@ -234,8 +528,8 @@ const D={
   pCO:3.847,pBA:3.6792701433522,pCE:3.30554137928462,
   infLP:3.5,infCO:4.4,
   ke:11.59,
-  liqCO:0.98,liqBA:0.90,liqCE:0.99,
-  equipCO:0,infrCO:0,
+  liqBA:0.90,liqCE:0.99,
+  equipCO:0.2609,infrCO:0.1170,energiaCO:0.0804,oemCO:0.0509,opExCO:0,
   equipBA:0.353718679702488,infrBA:0.0375305136892791,energiaBA:0.2863644,oemBA:0.107586206896552,opExBA:0.0715083333333333,
   equipCE:0.376785638464561,infrCE:0.0525014823684944,energiaCE:0.3272736,oemCE:0.110117647058824,opExCE:0.0715083333333333,
   cdBA:10.7,cdCE:11.7,
@@ -335,13 +629,15 @@ function getP(){
   let liqBA=1.05*(equipBA+infrBA+energiaBA+oemBA+opExBA);
   let equipCE=_v('equipCE',D.equipCE),infrCE=_v('infrCE',D.infrCE),energiaCE=_v('energiaCE',D.energiaCE),oemCE=_v('oemCE',D.oemCE),opExCE=_v('opExCE',D.opExCE);
   let liqCE=1.05*(equipCE+infrCE+energiaCE+oemCE+opExCE);
+  let equipCO=_v('equipCO',D.equipCO),infrCO=_v('infrCO',D.infrCO),energiaCO=_v('energiaCO',D.energiaCO),oemCO=_v('oemCO',D.oemCO),opExCO=_v('opExCO',D.opExCO);
+  let liqCO=1.05*(equipCO+infrCO+energiaCO+oemCO+opExCO);
 
   return{
     mol1:_v('mol1',D.mol1),molBA:_v('molBA',D.molBA),molCE:_v('molCE',D.molCE),
     pCO:_v('pCO',D.pCO),pBA:_v('pBA',D.pBA),pCE:_v('pCE',D.pCE),
     infLP:_v('infLP',D.infLP)/100,infCO:_v('infCO',D.infCO)/100,ke:_v('ke',D.ke)/100,tax:_v('tax',D.tax)/100,
-    liqCO:_v('liqCO',D.liqCO),liqBA,liqCE,
-    equipCO:_v('equipCO',D.equipCO),infrCO:_v('infrCO',D.infrCO),
+    liqCO,liqBA,liqCE,
+    equipCO,infrCO,energiaCO,oemCO,opExCO,
     equipBA,infrBA,energiaBA,oemBA,opExBA,
     equipCE,infrCE,energiaCE,oemCE,opExCE,
     cdBA:_v('cdBA',D.cdBA)/100,cdCE:_v('cdCE',D.cdCE)/100,
@@ -361,10 +657,10 @@ function recalc(){
   $('hdr_ke').textContent=(P.ke*100).toFixed(2);
   $('hdr_keNom').textContent=(kn*100).toFixed(2);
 
-  // Update all slider labels
+  // Update all slider number inputs from range
   document.querySelectorAll('[data-lbl]').forEach(el=>{
     const inp=$(el.dataset.lbl);
-    if(inp) el.textContent=parseFloat(inp.value).toFixed(el.dataset.dec||2)+(el.dataset.suf||'');
+    if(inp) el.value=inp.value;
   });
 
   // COMPAGÁS C1
@@ -376,13 +672,14 @@ function recalc(){
     if(!real&&t>=9)mr=P.mol1*(1+P.infCO)*(1-CO_ICMS);
     let infCo=(real?1:1+(t/12)*P.infCO),
         cm=mr*v,
-        cl=(P.liqCO-P.equipCO-P.infrCO)*v*infCo,
+        cl=P.liqCO*v*infCo,
         nOp_co=t<3?2:4,
         crBase=ISO_COST_M*CO_ISO+OP_COST_M*nOp_co,
         cr=crBase*infCo,
         cg=coLog(CO_VD[t],CO_D[t],P.distCO,P.logTipoCO)*infCo;
     let cdPR_eff=real?((1+CD_PR)/(1+P.infCO)-1):CD_PR,
-        am=(CO_VD[t]/PL.PR)*(DEBT_PR/12),ju=(CO_VD[t]/PL.PR)*DEBT_PR*(cdPR_eff/12),
+        cdPR_mensal=Math.pow(1+cdPR_eff,1/12)-1,
+        am=(CO_VD[t]/PL.PR)*(DEBT_PR/10/12),ju=(CO_VD[t]/PL.PR)*DEBT_PR*cdPR_mensal,
         eb=rc-cm-cl-cr-cg,
         lt=eb-am-ju,tr=lt>0?lt*P.tax:0,
         sl=eb-am-ju-tr,mo=rc>0?eb/rc:0;
@@ -475,9 +772,13 @@ function premCO(P){
       <option value="carreta" ${P.logTipoCO==='carreta'?'selected':''}>Carreta GNL</option>
       <option value="iso" ${P.logTipoCO==='iso'?'selected':''}>ISOtanque GNL</option></select></div>
   ${sl('distCO','Distância (km)',P.distCO,0,1200,1,0,'')}\
-  ${sl('liqCO','Custo liquefação (R$/m³)',P.liqCO,0.5,2,0.01,2,'')}\
-  ${sl('equipCO','Custo equipamentos (R$/m³)',P.equipCO,0,1,0.01,2,'')}\
-  ${sl('infrCO','Custo infraestrutura (R$/m³)',P.infrCO,0,1,0.01,2,'')}\
+  <div class="small" style="margin:8px 0 4px;font-weight:600;">Custo liquefação (R$/m³) = soma + 5% perdas</div>
+  ${sl('equipCO','  Equipamentos',P.equipCO,0,0.6,0.001,2,'')}\
+  ${sl('infrCO','  Infraestrutura',P.infrCO,0,0.5,0.001,2,'')}\
+  ${sl('energiaCO','  Energia',P.energiaCO,0,0.5,0.0001,2,'')}\
+  ${sl('oemCO','  O&amp;M',P.oemCO,0,0.5,0.01,2,'')}\
+  ${sl('opExCO','  OpEx',P.opExCO,0,0.5,0.01,2,'')}\
+  <div class="row"><label><span>Custo liquefação (total)</span><span id="liqCO_total" style="font-weight:600;">R$ ${P.liqCO.toFixed(2)}</span></label></div>
   ${sl('cxCO','Capex regás (R$ MM)',P.cxCO/1e6,1,10,0.01,2,'')}\
   ${sl('rvCO','Revenda equip. (R$ MM)',P.rvCO/1e6,0,8,0.01,2,'')}\
   ${slShared()}</section>`;
@@ -542,8 +843,9 @@ function slShared(){
   ${sl('tax','IR+CSLL (% sobre EBT)',P.tax*100,0,50,1,0,'%')}</div>`;
 }
 function sl(id,label,val,min,max,step,dec,suf){
-  const v=parseFloat(val).toFixed(dec)+suf;
-  return `<div class="row"><label><span>${label}</span><span data-lbl="${id}" data-dec="${dec}" data-suf="${suf||''}">${v}</span></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></div>`;
+  const v=parseFloat(val);
+  const sufStr=suf||'';
+  return `<div class="row"><label><span>${label}</span><span class="row-val"><input type="number" class="slider-num" data-lbl="${id}" data-min="${min}" data-max="${max}" data-step="${step}" value="${v}" min="${min}" max="${max}" step="${step}">${sufStr}</span></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></div>`;
 }
 
 // === KPI ===
@@ -578,10 +880,16 @@ function tblLiqVars(P,contract){
   let h='<div style="overflow:auto;margin-top:8px;"><table style="font-size:12px;"><thead><tr><th style="text-align:left">Variável</th><th>Valor (R$/m³)</th></tr></thead><tbody>';
   const fmtL=v=>'R$ '+parseFloat(v).toFixed(2);
   if(contract==='CO'){
-    h+=`<tr><td style="text-align:left;font-weight:600;">Custo de liquefação</td><td>${fmtL(P.liqCO)}</td></tr>`;
-    h+=`<tr><td style="text-align:left;font-weight:600;">Custo de equipamentos</td><td>${fmtL(P.equipCO)}</td></tr>`;
-    h+=`<tr><td style="text-align:left;font-weight:600;">Custo de infraestrutura</td><td>${fmtL(P.infrCO)}</td></tr>`;
-    h+=`<tr><td style="text-align:left;font-weight:600;color:var(--muted);">Fórmula</td><td style="font-size:11px;">(Liq − Equip − Infr) × vol. × (1 + soma infl.)</td></tr>`;
+    const baseCO=P.equipCO+P.infrCO+P.energiaCO+P.oemCO+P.opExCO;
+    const perdasCO=0.05*baseCO;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo equipamentos</td><td>${fmtL(P.equipCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo infraestrutura</td><td>${fmtL(P.infrCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo energia</td><td>${fmtL(P.energiaCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo O&amp;M</td><td>${fmtL(P.oemCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo OpEx</td><td>${fmtL(P.opExCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;">Perdas (5% da soma)</td><td>${fmtL(perdasCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;">Custo liquefação (soma)</td><td>${fmtL(P.liqCO)}</td></tr>`;
+    h+=`<tr><td style="text-align:left;font-weight:600;color:var(--muted);">Fórmula no fluxo</td><td style="font-size:11px;">Custo liq. total (R$/m³) × vol. × (1 + soma infl.)</td></tr>`;
   }else if(contract==='BA'){
     const baseBA=P.equipBA+P.infrBA+P.energiaBA+P.oemBA+P.opExBA;
     const perdasBA=0.05*baseBA;
@@ -624,6 +932,7 @@ function rCO(){
   if($('out-co')){
     $('out-co').innerHTML=kh;$('tbl-co').innerHTML=th;
     let lv=$('liqvars-co');if(lv)lv.innerHTML='<h3>Variáveis do custo de liquefação</h3>'+tblLiqVars(P,'CO');
+    let lt=$('liqCO_total');if(lt)lt.textContent='R$ '+P.liqCO.toFixed(2);
     let me=$('molCO_eff');if(me)me.textContent=(P.mol1*(1-CO_ICMS)).toFixed(4);
     mkBar('chCO1',c1.p.map(p=>p.l),c1.p.map(p=>p.eb));mkLine('chCO2',c1.p.map(p=>p.l),c1.fl);
     return;
@@ -780,12 +1089,35 @@ function onSlider(e){
   }
   recalc();
 }
+function onSliderNum(e){
+  const el=e.target;
+  if(!el.classList.contains('slider-num')||!el.dataset.lbl)return;
+  const r=$(el.dataset.lbl);
+  if(!r)return;
+  let v=parseFloat(el.value);
+  if(Number.isNaN(v))return;
+  const min=parseFloat(el.dataset.min),max=parseFloat(el.dataset.max),step=parseFloat(el.dataset.step);
+  v=Math.max(min,Math.min(max,v));
+  if(step>0)v=Math.round(v/step)*step;
+  const valStr=String(v);
+  el.value=v;
+  r.value=valStr;
+  const hid=$h(r.id);
+  if(hid)hid.value=valStr;
+  if(SHARED_IDS.has(r.id)) document.querySelectorAll('[id="'+r.id+'"]').forEach(n=>{if(n!==r)n.value=valStr;});
+  r.dispatchEvent(new Event('input',{bubbles:true}));
+  recalc();
+}
 function bindSliders(){
   document.querySelectorAll('input[type=range]').forEach(inp=>{
     inp.removeEventListener('input',onSlider);
     inp.removeEventListener('change',onSlider);
     inp.addEventListener('input',onSlider);
     inp.addEventListener('change',onSlider);
+  });
+  document.querySelectorAll('.slider-num').forEach(inp=>{
+    inp.removeEventListener('change',onSliderNum);
+    inp.addEventListener('change',onSliderNum);
   });
   document.querySelectorAll('select').forEach(sel=>{
     sel.removeEventListener('change',onSelectOrDist);
@@ -938,10 +1270,10 @@ function showSetupForm(){
   buildSetupForm();
 }
 function sfSlider(id,label,val,min,max,step){
-  const dec=step<1?(step<0.01?3:2):0;
-  return '<div class="row"><label><span>'+label+'</span><span id="'+id+'_lbl">'+parseFloat(val).toFixed(dec).replace('.',',')+'</span></label><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+val+'" oninput="sfLbl(this)"></div>';
+  const v=parseFloat(val);
+  return '<div class="row"><label><span>'+label+'</span><span class="row-val"><input type="number" class="slider-num" id="'+id+'_lbl" data-lbl="'+id+'" data-min="'+min+'" data-max="'+max+'" data-step="'+step+'" value="'+v+'" min="'+min+'" max="'+max+'" step="'+step+'"></span></label><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+val+'" oninput="sfLbl(this)"></div>';
 }
-function sfLbl(el){const lbl=$(el.id+'_lbl');if(!lbl)return;if(el.id.startsWith('sf_v')){lbl.textContent=fmt(+el.value,0);return;}const s=el.step||'1';const d=s.includes('.')?Math.min(s.split('.')[1].length,2):0;lbl.textContent=parseFloat(el.value).toFixed(d).replace('.',',');}
+function sfLbl(el){const lbl=$(el.id+'_lbl');if(!lbl)return;if(lbl.tagName==='INPUT'){lbl.value=el.value;return;}if(el.id.startsWith('sf_v')){lbl.textContent=fmt(+el.value,0);return;}const s=el.step||'1';const d=s.includes('.')?Math.min(s.split('.')[1].length,2):0;lbl.textContent=parseFloat(el.value).toFixed(d).replace('.',',');}
 function sfSep(t){return '<div class="sf-sep"><span class="small">'+t+'</span></div>';}
 const PLANT_DATA={PR:{cap:80875,debt:100,cd:14.25},BA:{cap:85933,debt:88,cd:10.70},RN:{cap:72667,debt:88,cd:11.70}};
 let SF_TEMPLATE=null;
@@ -966,12 +1298,16 @@ function sfToggleRegas(){
 function sfUpdateDur(){
   const type=$('sf_type').value;let dur=+$('sf_dur').value;const isM=type==='monthly';
   if(isM&&dur>12){$('sf_dur').value='12';dur=12;}
-  $('sf_dur').max=isM?'12':'10';
-  $('sf_dur_lbl').textContent=dur+(isM?(dur===1?' mês':' meses'):(dur===1?' ano':' anos'));
+  const durMax=isM?12:10;
+  $('sf_dur').max=durMax;
+  const durLbl=$('sf_dur_lbl'),durUnit=$('sf_dur_unit');
+  if(durLbl){if(durLbl.tagName==='INPUT'){durLbl.value=dur;durLbl.max=durMax;}else durLbl.textContent=dur+(isM?(dur===1?' mês':' meses'):(dur===1?' ano':' anos'));}
+  if(durUnit)durUnit.textContent=isM?(dur===1?'mês':'meses'):(dur===1?'ano':'anos');
   const sec=$('sf_vols');let vh='';
   for(let i=0;i<dur;i++){const old=$('sf_v'+i);const ov=old?old.value:'15000';const lb=isM?'Mês '+(i+1):'Ano '+(i+1);
-    vh+='<div class="row"><label><span>'+lb+'</span><span id="sf_v'+i+'_lbl">'+fmt(+ov,0)+'</span></label><input type="range" id="sf_v'+i+'" min="0" max="50000" step="100" value="'+ov+'" oninput="sfLbl(this)"></div>';
+    vh+='<div class="row"><label><span>'+lb+'</span><span class="row-val"><input type="number" class="slider-num" id="sf_v'+i+'_lbl" data-lbl="sf_v'+i+'" data-min="0" data-max="50000" data-step="100" value="'+ov+'" min="0" max="50000" step="100"></span></label><input type="range" id="sf_v'+i+'" min="0" max="50000" step="100" value="'+ov+'" oninput="sfLbl(this)"></div>';
   }sec.innerHTML=vh;
+  bindSliders();
   sfToggleRegas();
 }
 function buildSetupForm(){
@@ -980,8 +1316,8 @@ function buildSetupForm(){
   h+='<div class="row"><label><span>Nome do cliente</span></label><input type="text" id="sf_name" value="'+T.name+'" class="sf-input"></div>';
   h+='<div class="row"><label><span>Planta de abastecimento</span></label><select id="sf_plant" class="sf-input" onchange="sfPlantChange()"><option value="PR"'+(T.plant==='PR'?' selected':'')+'>PR (Paraná)</option><option value="BA"'+(T.plant==='BA'?' selected':'')+'>BA (Bahia)</option><option value="RN"'+(T.plant==='RN'?' selected':'')+'>RN (Rio Grande do Norte)</option></select></div>';
   h+='<div class="row"><label><span>Tipo de contrato</span></label><select id="sf_type" class="sf-input" onchange="sfUpdateDur()"><option value="annual"'+(T.type==='annual'?' selected':'')+'>Anual (&gt; 12 meses)</option><option value="monthly"'+(T.type==='monthly'?' selected':'')+'>Mensal (≤ 12 meses)</option></select></div>';
-  const durLbl=T.dur+(T.type==='monthly'?(T.dur===1?' mês':' meses'):(T.dur===1?' ano':' anos'));
-  h+='<div class="row"><label><span>Duração</span><span id="sf_dur_lbl">'+durLbl+'</span></label><input type="range" id="sf_dur" min="1" max="10" step="1" value="'+T.dur+'" oninput="sfUpdateDur()"></div>';
+  const isM=T.type==='monthly',durMax=isM?12:10;
+  h+='<div class="row"><label><span>Duração</span><span class="row-val"><input type="number" class="slider-num" id="sf_dur_lbl" data-lbl="sf_dur" data-min="1" data-max="'+durMax+'" data-step="1" value="'+T.dur+'" min="1" max="'+durMax+'" step="1"> <span id="sf_dur_unit">'+(isM?(T.dur===1?'mês':'meses'):(T.dur===1?'ano':'anos'))+'</span></span></label><input type="range" id="sf_dur" min="1" max="'+durMax+'" step="1" value="'+T.dur+'" oninput="sfUpdateDur()"></div>';
   h+='<div class="row"><label><span>Ano de início</span></label><input type="number" id="sf_start" value="'+T.start+'" min="2024" max="2050" class="sf-input"></div>';
   h+='<div class="small" style="margin:14px 0 6px;font-weight:600;">Volume diário por período (m³/dia)</div><div id="sf_vols"></div>';
   h+=sfSep('Premissas comerciais');
@@ -1014,9 +1350,9 @@ function buildSetupForm(){
   sfUpdateDur();
   if(SF_TEMPLATE){
     const dur=T.dur;
-    for(let i=0;i<dur&&i<T.vols.length;i++){const v=T.vols[i];const s=$('sf_v'+i),lbl=$('sf_v'+i+'_lbl');if(s){s.value=v;}if(lbl){lbl.textContent=fmt(v,0);}}
-    if(T.nisoVar){$('sf_niso_var').checked=true;sfToggleRegas();for(let i=0;i<dur&&i<T.nisoArr.length;i++){const s=$('sf_niso_'+i);if(s)s.value=T.nisoArr[i];}}
-    if(T.nopVar){$('sf_nop_var').checked=true;sfToggleRegas();for(let i=0;i<dur&&i<T.nopArr.length;i++){const s=$('sf_nop_'+i);if(s)s.value=T.nopArr[i];}}
+    for(let i=0;i<dur&&i<T.vols.length;i++){const v=T.vols[i];const s=$('sf_v'+i),lbl=$('sf_v'+i+'_lbl');if(s){s.value=v;}if(lbl){if(lbl.tagName==='INPUT')lbl.value=v;else lbl.textContent=fmt(v,0);}}
+    if(T.nisoVar){$('sf_niso_var').checked=true;sfToggleRegas();for(let i=0;i<dur&&i<T.nisoArr.length;i++){const s=$('sf_niso_'+i);if(s){s.value=T.nisoArr[i];sfLbl(s);}}}
+    if(T.nopVar){$('sf_nop_var').checked=true;sfToggleRegas();for(let i=0;i<dur&&i<T.nopArr.length;i++){const s=$('sf_nop_'+i);if(s){s.value=T.nopArr[i];sfLbl(s);}}}
   }
 }
 
@@ -1073,6 +1409,492 @@ $('resetBtn').addEventListener('click',()=>{
   $('view-'+curTab).innerHTML='';
   recalc();
 });
+
+// === INIT ===
+// ===================== EXPORT EXCEL =====================
+function exportExcel(){
+  if(typeof XLSX==='undefined'){alert('Biblioteca XLSX não carregada.');return;}
+  const P=getP();const real=P.modeloRealNominal==='real';
+  if(curTab==='consolidado') return exportAllSheets(P,real);
+  if(curTab==='compagas') return exportCO(P,real);
+  if(curTab==='bahiagas') return exportBA(P,real);
+  if(curTab==='cegas') return exportCE(P,real);
+  const cc=CC.find(c=>c.id===curTab);
+  if(cc) return exportCC(cc,P,real);
+}
+
+function xlCol(c){let s='';while(c>=0){s=String.fromCharCode(65+c%26)+s;c=Math.floor(c/26)-1;}return s;}
+function xlCell(c,r){return xlCol(c)+(r+1);}
+function xlCellAbs(c,r){return '$'+xlCol(c)+'$'+(r+1);}
+
+const XL_FONT={name:"Arial",sz:10};
+const XL_BDR={top:{style:"thin",color:{rgb:"F2F2F2"}},bottom:{style:"thin",color:{rgb:"F2F2F2"}},left:{style:"thin",color:{rgb:"F2F2F2"}},right:{style:"thin",color:{rgb:"F2F2F2"}}};
+const XL_FMT_N='_(#,##0_);_((#,##0);_("-"??_);_(@_)';
+const XL_FMT_P='_(#,##0.0%_);_((#,##0.0%);_("-"??_);_(@_)';
+const XL_FMT_D='#,##0.0000';
+const XL_FMT_D2='#,##0.00';
+const XL_HDR_S={font:{name:"Arial",sz:10,bold:true,color:{rgb:"FFFFFF"}},alignment:{vertical:"center",horizontal:"center"},fill:{patternType:"solid",fgColor:{rgb:"002D5C"}},border:XL_BDR};
+function xlS(fmt){
+  const s={font:{...XL_FONT},alignment:{vertical:"center"},border:XL_BDR};
+  if(fmt==='n'||fmt==='p'||fmt==='d'||fmt==='d2'){
+    s.alignment.horizontal="center";
+    if(fmt==='n')s.numFmt=XL_FMT_N;
+    else if(fmt==='p')s.numFmt=XL_FMT_P;
+    else if(fmt==='d')s.numFmt=XL_FMT_D;
+    else s.numFmt=XL_FMT_D2;
+  }
+  return s;
+}
+function xlSBold(fmt){const s=xlS(fmt);s.font={...s.font,bold:true};return s;}
+function xlSPrem(fmt){const s=xlS(fmt);s.fill={patternType:"solid",fgColor:{rgb:"E3ECE8"}};return s;}
+
+function xlAddPrem(ws,rows,startRow){
+  rows.forEach((r,i)=>{
+    const row=startRow+i;
+    const cA=XLSX.utils.encode_cell({r:row,c:0});
+    const cB=XLSX.utils.encode_cell({r:row,c:1});
+    ws[cA]={t:'s',v:r[0],s:xlS()};
+    const fmt=r.length>2?r[2]:undefined;
+    if(r.length>1){
+      if(typeof r[1]==='number') ws[cB]={t:'n',v:r[1],s:xlSPrem(fmt||'n')};
+      else if(typeof r[1]==='string' && r[1].startsWith('=')) ws[cB]={t:'n',f:r[1].slice(1),s:xlSPrem(fmt||'n')};
+      else ws[cB]={t:'s',v:r[1],s:xlS()};
+    }
+  });
+}
+function xlSetCell(ws,r,c,val,isFormula,fmt){
+  const ref=XLSX.utils.encode_cell({r,c});
+  if(isFormula){
+    const f=typeof val==='string'&&val.startsWith('=')?val.slice(1):val;
+    ws[ref]={t:'n',f:f,s:xlS(fmt||'n')};
+  } else if(typeof val==='number'){
+    ws[ref]={t:'n',v:val,s:xlS(fmt||'n')};
+  } else {
+    ws[ref]={t:'s',v:val??'',s:xlS()};
+  }
+}
+function xlSetTitle(ws,r,c,val){
+  const ref=XLSX.utils.encode_cell({r,c});
+  ws[ref]={t:'s',v:val,s:xlSBold()};
+}
+function xlSetHdr(ws,r,c,val){
+  const ref=XLSX.utils.encode_cell({r,c});
+  ws[ref]={t:'s',v:val??'',s:{...XL_HDR_S}};
+}
+function xlBoldRow(ws,row,maxC){for(let c=0;c<=maxC;c++){const ref=XLSX.utils.encode_cell({r:row,c});if(ws[ref]&&ws[ref].s)ws[ref].s={...ws[ref].s,font:{...ws[ref].s.font,bold:true}};}}
+function xlFinalise(ws,maxR,maxC){
+  ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:maxR,c:maxC}});
+  const cols=[];for(let i=0;i<=maxC;i++) cols.push({wch:i===0?32:18});
+  ws['!cols']=cols;
+  const rows=[];for(let i=0;i<=maxR;i++) rows.push({hpt:15});
+  ws['!rows']=rows;
+  if(!ws['!sheetViews'])ws['!sheetViews']=[{}];
+  ws['!sheetViews'][0].showGridLines=false;
+}
+function xlSave(wb,name){XLSX.writeFile(wb,name+'.xlsx');}
+
+// ---- COMPAGÁS ----
+function exportCO(P,real){
+  const wb=XLSX.utils.book_new();const ws={};
+  const kn=real?P.ke:(1+P.ke)*(1+P.infLP)-1;const km=Math.pow(1+kn,1/12)-1;
+  const nInd=10,nPrem=24;
+  const iS=2,pTitle=iS+nInd+1,pS=pTitle+1;
+  const fTitle=pS+nPrem+1,hdrR=fTitle+1;
+  const rDias=hdrR+1,rVd=hdrR+2,rVol=hdrR+3,rPreco=hdrR+4,rRec=hdrR+5;
+  const rMolU=hdrR+6,rMol=hdrR+7,rLiqU=hdrR+8,rLiq=hdrR+9;
+  const rLog=hdrR+10,rRegas=hdrR+11,rEbitda=hdrR+12;
+  const rAmort=hdrR+13,rJuros=hdrR+14,rLT=hdrR+15,rIR=hdrR+16,rRL=hdrR+17,rFC=hdrR+18;
+  const pR=i=>'$B$'+(pS+i+1);
+  const pPreco=pR(0),pMol=pR(1),pICMS=pR(2),pInfCO=pR(4),pInfLP=pR(5);
+  const pEq=pR(6),pInfr=pR(7),pLiq=pR(11),pKm=pR(16),pIRx=pR(17),pCapex=pR(18),pRev=pR(19);
+  const pPlCap=pR(21),pPlDebt=pR(22),pPlCD=pR(23);
+  // === INDICADORES ===
+  xlSetTitle(ws,0,0,'INDICADORES');
+  const fcRange=xlCell(1,rFC)+':'+xlCell(13,rFC);
+  xlSetCell(ws,iS,0,'VPL');xlSetCell(ws,iS,1,'NPV('+pKm+','+fcRange+')',true,'n');
+  xlSetCell(ws,iS+1,0,'TIR (mensal)');xlSetCell(ws,iS+1,1,'IRR('+fcRange+')',true,'p');
+  xlSetCell(ws,iS+2,0,'TIR (anual)');xlSetCell(ws,iS+2,1,'(1+'+xlCell(1,iS+1)+')^12-1',true,'p');
+  const recRange=xlCell(2,rRec)+':'+xlCell(13,rRec),volRange=xlCell(2,rVol)+':'+xlCell(13,rVol);
+  const ebRange=xlCell(2,rEbitda)+':'+xlCell(13,rEbitda),rlRange=xlCell(2,rRL)+':'+xlCell(13,rRL);
+  xlSetCell(ws,iS+3,0,'Volume Total (m³)');xlSetCell(ws,iS+3,1,'SUM('+volRange+')',true,'n');
+  xlSetCell(ws,iS+4,0,'Receita Total');xlSetCell(ws,iS+4,1,'SUM('+recRange+')',true,'n');
+  xlSetCell(ws,iS+5,0,'EBITDA Total');xlSetCell(ws,iS+5,1,'SUM('+ebRange+')',true,'n');
+  xlSetCell(ws,iS+6,0,'Margem EBITDA');xlSetCell(ws,iS+6,1,xlCell(1,iS+5)+'/'+xlCell(1,iS+4),true,'p');
+  xlSetCell(ws,iS+7,0,'Resultado Líquido Total');xlSetCell(ws,iS+7,1,'SUM('+rlRange+')',true,'n');
+  xlSetCell(ws,iS+8,0,'Margem Líquida');xlSetCell(ws,iS+8,1,xlCell(1,iS+7)+'/'+xlCell(1,iS+4),true,'p');
+  xlSetCell(ws,iS+9,0,'CapEx Total');xlSetCell(ws,iS+9,1,'='+pCapex,true,'n');
+  // === PREMISSAS ===
+  xlSetTitle(ws,pTitle,0,'PREMISSAS — Compagás');
+  const prem=[
+    ['Preço de venda (R$/m³)',P.pCO,'d2'],['Custo molécula bruto (R$/m³)',P.mol1,'d'],
+    ['ICMS capturado',CO_ICMS,'p'],['Custo molécula efetivo (R$/m³)','='+pR(1)+'*(1-'+pR(2)+')','d'],
+    ['Inflação Compagás (% a.a.)',P.infCO,'p'],['Inflação LP (% a.a.)',P.infLP,'p'],
+    ['Custo equipamentos (R$/m³)',P.equipCO,'d2'],['Custo infraestrutura (R$/m³)',P.infrCO,'d2'],
+    ['Custo energia (R$/m³)',P.energiaCO,'d2'],['Custo O&M (R$/m³)',P.oemCO,'d2'],['Custo OpEx (R$/m³)',P.opExCO,'d2'],
+    ['Custo liquefação total (R$/m³)','=1.05*('+pR(6)+'+'+pR(7)+'+'+pR(8)+'+'+pR(9)+'+'+pR(10)+')','d2'],
+    ['Distância (km)',P.distCO,'n'],['Tipo logística',P.logTipoCO==='iso'?'ISOtanque':'Carreta'],
+    ['Ke real (% a.a.)',P.ke,'p'],['Ke nominal (% a.a.)',kn,'p'],['Ke mensal',km,'p'],
+    ['IR (%)',P.tax,'p'],['CapEx regás (R$)',P.cxCO,'n'],['Revenda equip. (R$)',P.rvCO,'n'],
+    ['Modelo',real?'Real':'Nominal'],['Cap. planta PR (m³/dia)',PL.PR,'n'],['Dívida planta PR (R$)',DEBT_PR,'n'],['Custo dívida PR (% a.a.)',CD_PR,'p'],
+  ];
+  xlAddPrem(ws,prem,pS);
+  // === FLUXO DE CAIXA ===
+  xlSetTitle(ws,fTitle,0,'FLUXO DE CAIXA MENSAL');
+  xlSetHdr(ws,hdrR,0,'');xlSetHdr(ws,hdrR,1,'Investim.');
+  for(let t=0;t<12;t++) xlSetHdr(ws,hdrR,t+2,CO_M[t]);
+  ['Dias no mês','Volume diário (m³/dia)','Volume total (m³)','Preço de venda (R$/m³)','Receita',
+   'C. Molécula unit. (R$/m³)','C. Molécula','C. Liquefação unit. (R$/m³)','C. Liquefação',
+   'C. Logística','Regás + Fixo','EBITDA','Amortização','Juros','Lucro tributável','IR','Resultado líquido','Fluxo de caixa'
+  ].forEach((l,i)=>xlSetCell(ws,hdrR+1+i,0,l));
+  xlSetCell(ws,rFC,1,-P.cxCO,false,'n');
+  for(let t=0;t<12;t++){
+    const c=t+2;
+    xlSetCell(ws,rVd,c,CO_VD[t],false,'n');xlSetCell(ws,rDias,c,CO_D[t],false,'n');
+    xlSetCell(ws,rVol,c,xlCell(c,rVd)+'*'+xlCell(c,rDias),true,'n');
+    if(!real&&t===11) xlSetCell(ws,rPreco,c,pPreco+'*(1+'+pInfLP+')',true,'d2');
+    else xlSetCell(ws,rPreco,c,'='+pPreco,true,'d2');
+    xlSetCell(ws,rRec,c,xlCell(c,rPreco)+'*'+xlCell(c,rVol),true,'n');
+    if(!real&&t>=9) xlSetCell(ws,rMolU,c,pMol+'*(1+'+pInfCO+')*(1-'+pICMS+')',true,'d');
+    else xlSetCell(ws,rMolU,c,pMol+'*(1-'+pICMS+')',true,'d');
+    xlSetCell(ws,rMol,c,xlCell(c,rMolU)+'*'+xlCell(c,rVol),true,'n');
+    const infF=real?'1':'(1+'+t+'/12*'+pInfCO+')';
+    xlSetCell(ws,rLiqU,c,pLiq+'*'+infF,true,'d');
+    xlSetCell(ws,rLiq,c,xlCell(c,rLiqU)+'*'+xlCell(c,rVol),true,'n');
+    const infCo=real?1:1+(t/12)*P.infCO;
+    xlSetCell(ws,rLog,c,coLog(CO_VD[t],CO_D[t],P.distCO,P.logTipoCO)*infCo,false,'n');
+    const nOp=t<3?2:4;
+    xlSetCell(ws,rRegas,c,'('+ISO_COST_M+'*'+CO_ISO+'+'+OP_COST_M+'*'+nOp+')*'+infF,true,'n');
+    xlSetCell(ws,rEbitda,c,xlCell(c,rRec)+'-'+xlCell(c,rMol)+'-'+xlCell(c,rLiq)+'-'+xlCell(c,rLog)+'-'+xlCell(c,rRegas),true,'n');
+    xlSetCell(ws,rAmort,c,xlCell(c,rVd)+'/'+pPlCap+'*'+pPlDebt+'/10/12',true,'n');
+    const cdEff=real?'((1+'+pPlCD+')/(1+'+pInfCO+')-1)':pPlCD;
+    xlSetCell(ws,rJuros,c,xlCell(c,rVd)+'/'+pPlCap+'*'+pPlDebt+'*((1+'+cdEff+')^(1/12)-1)',true,'n');
+    xlSetCell(ws,rLT,c,xlCell(c,rEbitda)+'-'+xlCell(c,rAmort)+'-'+xlCell(c,rJuros),true,'n');
+    xlSetCell(ws,rIR,c,'IF('+xlCell(c,rLT)+'>0,'+xlCell(c,rLT)+'*'+pIRx+',0)',true,'n');
+    xlSetCell(ws,rRL,c,xlCell(c,rEbitda)+'-'+xlCell(c,rAmort)+'-'+xlCell(c,rJuros)+'-'+xlCell(c,rIR),true,'n');
+    if(t===11) xlSetCell(ws,rFC,c,xlCell(c,rRL)+'+'+pRev,true,'n');
+    else xlSetCell(ws,rFC,c,'='+xlCell(c,rRL),true,'n');
+  }
+  [rVd,rVol,rRec,rEbitda,rRL,rFC].forEach(r=>xlBoldRow(ws,r,14));
+  xlFinalise(ws,rFC+1,14);
+  XLSX.utils.book_append_sheet(wb,ws,'Compagás');
+  xlSave(wb,'Compagás_modelo');
+}
+
+// ---- BAHIAGÁS / CEGÁS (ANUAL) ----
+function exportAnual(wb,sheetName,P,real,VD,YEARS,nPeriods,pVenda,pMol,distKm,logTipo,liqTotal,equipVal,infrVal,energiaVal,oemVal,opExVal,capex,revenda,revAno,plCap,plDebt,plCD,isoFn,opFn,amFn,juFn,logFn,fixCostExtra,precoFn){
+  const ws={};const kn=real?P.ke:(1+P.ke)*(1+P.infLP)-1;
+  const nInd=9,nPrem=21;
+  const iS=2,pTitle=iS+nInd+1,pS=pTitle+1;
+  const fTitle=pS+nPrem+1,hdrR=fTitle+1;
+  const rDias=hdrR+1,rVd=hdrR+2,rVol=hdrR+3,rPreco=hdrR+4,rRec=hdrR+5;
+  const rMolC=hdrR+6,rLiqC=hdrR+7,rLogC=hdrR+8,rRegC=hdrR+9,rEb=hdrR+10;
+  const rAm=hdrR+11,rJu=hdrR+12,rLT=hdrR+13,rIRR=hdrR+14,rRL=hdrR+15,rFC=hdrR+16;
+  const pR=i=>'$B$'+(pS+i+1);
+  const pP=pR(0),pM=pR(1),pILP=pR(2),pLiq=pR(3),pEq=pR(4),pInfr=pR(5);
+  const pIR=pR(13),pCx=pR(14),pRv=pR(15),pPC=pR(17),pPD=pR(18),pPCD=pR(19),pDur=pR(20);
+  const knRef=pR(12);
+  // === INDICADORES ===
+  xlSetTitle(ws,0,0,'INDICADORES');
+  const fcR=xlCell(1,rFC)+':'+xlCell(nPeriods+1,rFC);
+  xlSetCell(ws,iS,0,'VPL');xlSetCell(ws,iS,1,'NPV('+knRef+','+fcR+')',true,'n');
+  xlSetCell(ws,iS+1,0,'TIR');xlSetCell(ws,iS+1,1,'IFERROR(IRR('+fcR+'),"n/a")',true,'p');
+  const volR=xlCell(2,rVol)+':'+xlCell(nPeriods+1,rVol),recR=xlCell(2,rRec)+':'+xlCell(nPeriods+1,rRec);
+  const ebR=xlCell(2,rEb)+':'+xlCell(nPeriods+1,rEb),rlR=xlCell(2,rRL)+':'+xlCell(nPeriods+1,rRL);
+  xlSetCell(ws,iS+2,0,'Volume Total (m³)');xlSetCell(ws,iS+2,1,'SUM('+volR+')',true,'n');
+  xlSetCell(ws,iS+3,0,'Receita Total');xlSetCell(ws,iS+3,1,'SUM('+recR+')',true,'n');
+  xlSetCell(ws,iS+4,0,'EBITDA Total');xlSetCell(ws,iS+4,1,'SUM('+ebR+')',true,'n');
+  xlSetCell(ws,iS+5,0,'Margem EBITDA');xlSetCell(ws,iS+5,1,xlCell(1,iS+4)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+6,0,'Resultado Líquido Total');xlSetCell(ws,iS+6,1,'SUM('+rlR+')',true,'n');
+  xlSetCell(ws,iS+7,0,'Margem Líquida');xlSetCell(ws,iS+7,1,xlCell(1,iS+6)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+8,0,'CapEx Total');xlSetCell(ws,iS+8,1,'='+pCx,true,'n');
+  // === PREMISSAS ===
+  xlSetTitle(ws,pTitle,0,'PREMISSAS — '+sheetName);
+  const prem=[
+    ['Preço de venda (R$/m³)',pVenda,'d2'],['Custo molécula (R$/m³)',pMol,'d'],
+    ['Inflação LP (% a.a.)',P.infLP,'p'],['Custo liquefação total (R$/m³)',liqTotal,'d2'],
+    ['Equipamentos (R$/m³)',equipVal,'d2'],['Infraestrutura (R$/m³)',infrVal,'d2'],
+    ['Energia (R$/m³)',energiaVal||0,'d2'],['O&M (R$/m³)',oemVal||0,'d2'],['OpEx (R$/m³)',opExVal||0,'d2'],
+    ['Distância (km)',distKm,'n'],['Tipo logística',logTipo==='iso'?'ISOtanque':'Carreta'],
+    ['Ke real (% a.a.)',P.ke,'p'],['Ke nominal (% a.a.)',kn,'p'],['IR (%)',P.tax,'p'],
+    ['CapEx regás (R$)',capex,'n'],['Revenda equip. (R$)',revenda||0,'n'],
+    ['Modelo',real?'Real':'Nominal'],['Cap. planta (m³/dia)',plCap,'n'],
+    ['Dívida planta (R$)',plDebt,'n'],['Custo dívida (% a.a.)',plCD,'p'],['Duração (anos)',nPeriods,'n'],
+  ];
+  xlAddPrem(ws,prem,pS);
+  // === FLUXO DE CAIXA ===
+  xlSetTitle(ws,fTitle,0,'FLUXO DE CAIXA ANUAL');
+  xlSetHdr(ws,hdrR,0,'');xlSetHdr(ws,hdrR,1,'Investim.');
+  for(let t=0;t<nPeriods;t++) xlSetHdr(ws,hdrR,t+2,YEARS[t]);
+  ['Dias no ano','Volume diário (m³/dia)','Volume total (m³)','Preço venda (R$/m³)','Receita',
+   'C. Molécula','C. Liquefação','C. Logística','Regás + Fixo','EBITDA',
+   'Amortização','Juros','Lucro tributável','IR','Resultado líquido','Fluxo de caixa'
+  ].forEach((l,i)=>xlSetCell(ws,hdrR+1+i,0,l));
+  xlSetCell(ws,rFC,1,-capex,false,'n');
+  for(let t=0;t<nPeriods;t++){
+    const c=t+2;const yr=+YEARS[t];const dy=daysInYear(yr);const vd=VD[t];
+    xlSetCell(ws,rVd,c,vd,false,'n');xlSetCell(ws,rDias,c,dy,false,'n');
+    xlSetCell(ws,rVol,c,xlCell(c,rVd)+'*'+xlCell(c,rDias),true,'n');
+    if(real||t===0) xlSetCell(ws,rPreco,c,'='+pP,true,'d2');
+    else xlSetCell(ws,rPreco,c,pP+'*(1+'+t+'*'+pILP+'*(1-'+pM+'/'+pP+'))',true,'d2');
+    xlSetCell(ws,rRec,c,xlCell(c,rPreco)+'*'+xlCell(c,rVol),true,'n');
+    xlSetCell(ws,rMolC,c,pM+'*'+xlCell(c,rVol),true,'n');
+    const infF=real?'1':'(1+'+t+'*'+pILP+')';
+    xlSetCell(ws,rLiqC,c,'('+pLiq+'-'+pEq+'-'+pInfr+')*'+xlCell(c,rVol)+'*'+infF,true,'n');
+    const infAno=real?1:1+t*P.infLP;
+    xlSetCell(ws,rLogC,c,logFn(vd,distKm,logTipo)*infAno+(fixCostExtra?12*fixCostExtra*infAno:0),false,'n');
+    const nISO=isoFn(t),nOP=opFn(t);
+    xlSetCell(ws,rRegC,c,'('+ISO_COST_M+'*12*'+nISO+'+'+OP_COST_M+'*12*'+nOP+')*'+infF,true,'n');
+    xlSetCell(ws,rEb,c,xlCell(c,rRec)+'-'+xlCell(c,rMolC)+'-'+xlCell(c,rLiqC)+'-'+xlCell(c,rLogC)+'-'+xlCell(c,rRegC),true,'n');
+    const amVal=amFn(t,vd,c,rVd,{pPC,pPD,pDur,pILP,pPCD});
+    const juVal=juFn(t,vd,c,rVd,{pPC,pPD,pDur,pILP,pPCD});
+    if(typeof amVal==='string') xlSetCell(ws,rAm,c,amVal,true,'n');
+    else xlSetCell(ws,rAm,c,amVal,false,'n');
+    if(typeof juVal==='string') xlSetCell(ws,rJu,c,juVal,true,'n');
+    else xlSetCell(ws,rJu,c,juVal,false,'n');
+    xlSetCell(ws,rLT,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu),true,'n');
+    xlSetCell(ws,rIRR,c,'IF('+xlCell(c,rLT)+'>0,'+xlCell(c,rLT)+'*'+pIR+',0)',true,'n');
+    xlSetCell(ws,rRL,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu)+'-'+xlCell(c,rIRR),true,'n');
+    if(revAno!==null&&t===revAno-1) xlSetCell(ws,rFC,c,xlCell(c,rRL)+'+'+pRv,true,'n');
+    else xlSetCell(ws,rFC,c,'='+xlCell(c,rRL),true,'n');
+  }
+  [rVd,rVol,rRec,rEb,rRL,rFC].forEach(r=>xlBoldRow(ws,r,nPeriods+2));
+  xlFinalise(ws,rFC+1,nPeriods+2);
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  return ws;
+}
+
+function exportBA(P,real){
+  const wb=XLSX.utils.book_new();
+  const logFnBA=(vd,dist,tipo)=>{const p=logParams(tipo);const n=logNUnits(vd,dist,tipo);return 12*p.fix*n+12*logVarCost(vd,dist,tipo);};
+  exportAnual(wb,'Bahiagás',P,real,BA_VD,BA_Y,10,P.pBA,P.molBA,P.distBA,P.logTipoBA,
+    P.liqBA,P.equipBA,P.infrBA,P.energiaBA,P.oemBA,P.opExBA,
+    P.cxBA,0,null,PL.BA,DEBT_BA,CD_BA,
+    t=>t<3?1:2, t=>t<5?2:3,
+    (t,vd,c,rVd,refs)=>refs.pPD+'/'+refs.pDur+'*'+xlCell(c,rVd)+'/'+refs.pPC,
+    (t,vd,c,rVd,refs)=>xlCell(c,rVd)+'/'+refs.pPC+'*'+refs.pPD+'*'+refs.pPCD,
+    logFnBA,LOG_BA_EXTRA_M
+  );
+  xlSave(wb,'Bahiagás_modelo');
+}
+
+function exportCE(P,real){
+  const wb=XLSX.utils.book_new();const ny=P.hCE;
+  const logFnCE=(vd,dist,tipo)=>{const p=logParams(tipo);const n=logNUnits(vd,dist,tipo);return 12*p.fix*n+12*logVarCost(vd,dist,tipo);};
+  const cdEff=real?((1+CD_RN)/(1+P.infLP)-1):CD_RN;
+  exportAnual(wb,'Cegás',P,real,CE_VD.slice(0,ny),CE_Y.slice(0,ny),ny,P.pCE,P.molCE,P.distCE,P.logTipoCE,
+    P.liqCE,P.equipCE,P.infrCE,P.energiaCE,P.oemCE,P.opExCE,
+    P.cxCE,ny===5?P.rvCE:0,ny===5?5:null,PL.RN,DEBT_RN,CD_RN,
+    t=>CE_ISO, t=>t<7?4:5,
+    (t,vd,c,rVd,refs)=>2269431.19266055,
+    (t,vd,c,rVd,refs)=>{
+      const cdF=real?'((1+'+refs.pPCD+')/(1+'+refs.pILP+')-1)':refs.pPCD;
+      return xlCell(c,rVd)+'/'+refs.pPC+'*'+refs.pPD+'*'+cdF;
+    },
+    logFnCE,0
+  );
+  xlSave(wb,'Cegás_modelo');
+}
+
+function exportCC(cc,P,real){
+  const wb=XLSX.utils.book_new();const cp=getCCParams(cc);
+  const kn=real?P.ke:(1+P.ke)*(1+P.infLP)-1;
+  const dur=cc.duration;const monthly=cc.isMonthly;
+  const plant=PLANT_DATA[cc.plant||'BA'];const ws={};
+  const nInd=9,nPrem=15;
+  const iS=2,pTitle=iS+nInd+1,pS=pTitle+1;
+  const fTitle=pS+nPrem+1,hdrR=fTitle+1;
+  const rDias=hdrR+1,rVd=hdrR+2,rVol=hdrR+3,rPreco=hdrR+4,rRec=hdrR+5;
+  const rMol=hdrR+6,rLiq=hdrR+7,rLog=hdrR+8,rReg=hdrR+9,rEb=hdrR+10;
+  const rAm=hdrR+11,rJu=hdrR+12,rLT=hdrR+13,rIRrow=hdrR+14,rRL=hdrR+15,rFC=hdrR+16;
+  const pR=i=>'$B$'+(pS+i+1);
+  const pP=pR(0),pM=pR(1),pILP=pR(2),pLq=pR(3),pIR=pR(8),pCx=pR(9),pPC=pR(11),pPD=pR(12),pPCD=pR(13);
+  const knRef=pR(7);
+  // === INDICADORES ===
+  xlSetTitle(ws,0,0,'INDICADORES');
+  const fcR=xlCell(1,rFC)+':'+xlCell(dur+1,rFC);
+  xlSetCell(ws,iS,0,'VPL');xlSetCell(ws,iS,1,'NPV('+knRef+','+fcR+')',true,'n');
+  xlSetCell(ws,iS+1,0,'TIR');xlSetCell(ws,iS+1,1,'IFERROR(IRR('+fcR+'),"n/a")',true,'p');
+  const volR=xlCell(2,rVol)+':'+xlCell(dur+1,rVol),recR=xlCell(2,rRec)+':'+xlCell(dur+1,rRec);
+  const ebR=xlCell(2,rEb)+':'+xlCell(dur+1,rEb),rlR=xlCell(2,rRL)+':'+xlCell(dur+1,rRL);
+  xlSetCell(ws,iS+2,0,'Volume Total');xlSetCell(ws,iS+2,1,'SUM('+volR+')',true,'n');
+  xlSetCell(ws,iS+3,0,'Receita Total');xlSetCell(ws,iS+3,1,'SUM('+recR+')',true,'n');
+  xlSetCell(ws,iS+4,0,'EBITDA Total');xlSetCell(ws,iS+4,1,'SUM('+ebR+')',true,'n');
+  xlSetCell(ws,iS+5,0,'Margem EBITDA');xlSetCell(ws,iS+5,1,xlCell(1,iS+4)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+6,0,'Result. Líquido');xlSetCell(ws,iS+6,1,'SUM('+rlR+')',true,'n');
+  xlSetCell(ws,iS+7,0,'Margem Líquida');xlSetCell(ws,iS+7,1,xlCell(1,iS+6)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+8,0,'CapEx Total');xlSetCell(ws,iS+8,1,'='+pCx,true,'n');
+  // === PREMISSAS ===
+  xlSetTitle(ws,pTitle,0,'PREMISSAS — '+cc.name);
+  const prem=[
+    ['Preço de venda (R$/m³)',cp.price,'d2'],['Custo molécula (R$/m³)',cp.mol,'d'],
+    ['Inflação LP (% a.a.)',P.infLP,'p'],['Custo liquefação (R$/m³)',cp.liq,'d2'],
+    ['Distância (km)',cp.dist,'n'],['Tipo logística',cp.logTipo==='iso'?'ISOtanque':'Carreta'],
+    ['Ke real (% a.a.)',P.ke,'p'],['Ke nominal/anual',kn,'p'],
+    ['IR (%)',P.tax,'p'],['CapEx (R$)',cp.capex,'n'],
+    ['Modelo',real?'Real':'Nominal'],['Cap. planta (m³/dia)',plant.cap,'n'],
+    ['Dívida planta (R$)',plant.debt*1e6,'n'],['Custo dívida (% a.a.)',plant.cd/100,'p'],
+    ['Duração',dur+(monthly?' meses':' anos')],
+  ];
+  xlAddPrem(ws,prem,pS);
+  // === FLUXO DE CAIXA ===
+  xlSetTitle(ws,fTitle,0,monthly?'FLUXO DE CAIXA MENSAL':'FLUXO DE CAIXA ANUAL');
+  xlSetHdr(ws,hdrR,0,'');xlSetHdr(ws,hdrR,1,'Investim.');
+  const periods=[];for(let t=0;t<dur;t++) periods.push(monthly?'Mês '+(t+1):'Ano '+(t+1));
+  periods.forEach((l,t)=>xlSetHdr(ws,hdrR,t+2,l));
+  ['Dias','Volume diário','Volume total','Preço (R$/m³)','Receita','C. Molécula','C. Liquefação','C. Logística','Regás+Fixo','EBITDA','Amortização','Juros','Lucro tributável','IR','Resultado líquido','Fluxo de caixa'].forEach((l,i)=>xlSetCell(ws,hdrR+1+i,0,l));
+  xlSetCell(ws,rFC,1,-cp.capex,false,'n');
+  const res=R[cc.id];if(!res){[rVd,rVol,rRec,rEb,rRL,rFC].forEach(r=>xlBoldRow(ws,r,dur+2));xlFinalise(ws,rFC+1,dur+2);XLSX.utils.book_append_sheet(wb,ws,cc.name);xlSave(wb,cc.name+'_modelo');return;}
+  for(let t=0;t<dur;t++){
+    const c=t+2;const pp=res.p[t];if(!pp)continue;
+    xlSetCell(ws,rVd,c,pp.vd||pp.v,false,'n');xlSetCell(ws,rDias,c,monthly?pp.d||30:pp.d||365,false,'n');
+    xlSetCell(ws,rVol,c,pp.v,false,'n');xlSetCell(ws,rPreco,c,pp.pr,false,'d2');xlSetCell(ws,rRec,c,pp.rc,false,'n');
+    xlSetCell(ws,rMol,c,pp.cm,false,'n');xlSetCell(ws,rLiq,c,pp.cl,false,'n');
+    xlSetCell(ws,rLog,c,pp.cg,false,'n');xlSetCell(ws,rReg,c,pp.cr||pp.crg||0,false,'n');
+    xlSetCell(ws,rEb,c,xlCell(c,rRec)+'-'+xlCell(c,rMol)+'-'+xlCell(c,rLiq)+'-'+xlCell(c,rLog)+'-'+xlCell(c,rReg),true,'n');
+    xlSetCell(ws,rAm,c,pp.am,false,'n');xlSetCell(ws,rJu,c,pp.ju,false,'n');
+    xlSetCell(ws,rLT,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu),true,'n');
+    xlSetCell(ws,rIRrow,c,'IF('+xlCell(c,rLT)+'>0,'+xlCell(c,rLT)+'*'+pIR+',0)',true,'n');
+    xlSetCell(ws,rRL,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu)+'-'+xlCell(c,rIRrow),true,'n');
+    xlSetCell(ws,rFC,c,'='+xlCell(c,rRL),true,'n');
+  }
+  [rVd,rVol,rRec,rEb,rRL,rFC].forEach(r=>xlBoldRow(ws,r,dur+2));
+  xlFinalise(ws,rFC+1,dur+2);
+  XLSX.utils.book_append_sheet(wb,ws,cc.name.substring(0,31));
+  xlSave(wb,cc.name+'_modelo');
+}
+
+function exportAllSheets(P,real){
+  const wb=XLSX.utils.book_new();
+  exportCOSheet(wb,P,real);
+  // Bahiagás sheet
+  const logBA=(vd,dist,tipo)=>{const p=logParams(tipo);const n=logNUnits(vd,dist,tipo);return 12*p.fix*n+12*logVarCost(vd,dist,tipo);};
+  exportAnual(wb,'Bahiagás',P,real,BA_VD,BA_Y,10,P.pBA,P.molBA,P.distBA,P.logTipoBA,P.liqBA,P.equipBA,P.infrBA,P.energiaBA,P.oemBA,P.opExBA,P.cxBA,0,null,PL.BA,DEBT_BA,CD_BA,t=>t<3?1:2,t=>t<5?2:3,(t,vd,c,rVd,refs)=>refs.pPD+'/'+refs.pDur+'*'+xlCell(c,rVd)+'/'+refs.pPC,(t,vd,c,rVd,refs)=>xlCell(c,rVd)+'/'+refs.pPC+'*'+refs.pPD+'*'+refs.pPCD,logBA,LOG_BA_EXTRA_M);
+  // Cegás sheet
+  const ny=P.hCE;
+  const logCE=(vd,dist,tipo)=>{const p=logParams(tipo);const n=logNUnits(vd,dist,tipo);return 12*p.fix*n+12*logVarCost(vd,dist,tipo);};
+  exportAnual(wb,'Cegás',P,real,CE_VD.slice(0,ny),CE_Y.slice(0,ny),ny,P.pCE,P.molCE,P.distCE,P.logTipoCE,P.liqCE,P.equipCE,P.infrCE,P.energiaCE,P.oemCE,P.opExCE,P.cxCE,ny===5?P.rvCE:0,ny===5?5:null,PL.RN,DEBT_RN,CD_RN,t=>CE_ISO,t=>t<7?4:5,(t,vd,c,rVd,refs)=>2269431.19266055,(t,vd,c,rVd,refs)=>{const cdF=real?'((1+'+refs.pPCD+')/(1+'+refs.pILP+')-1)':refs.pPCD;return xlCell(c,rVd)+'/'+refs.pPC+'*'+refs.pPD+'*'+cdF;},logCE,0);
+  // Custom contracts
+  for(const cc of CC){const res=R[cc.id];if(!res)continue;exportCCSheet(wb,cc,P,real);}
+  xlSave(wb,'Consolidado_modelo');
+}
+
+function exportCOSheet(wb,P,real){
+  const ws={};const kn=real?P.ke:(1+P.ke)*(1+P.infLP)-1;const km=Math.pow(1+kn,1/12)-1;
+  const nInd=10,nPrem=24;
+  const iS=2,pTitle=iS+nInd+1,pS=pTitle+1;
+  const fTitle=pS+nPrem+1,hdrR=fTitle+1;
+  const rDias=hdrR+1,rVd=hdrR+2,rVol=hdrR+3,rPreco=hdrR+4,rRec=hdrR+5,rMolU=hdrR+6,rMol=hdrR+7,rLiqU=hdrR+8,rLiq=hdrR+9,rLog=hdrR+10,rRegas=hdrR+11,rEbitda=hdrR+12,rAmort=hdrR+13,rJuros=hdrR+14,rLT=hdrR+15,rIR=hdrR+16,rRL=hdrR+17,rFC=hdrR+18;
+  const pR=i=>'$B$'+(pS+i+1);
+  const pPreco=pR(0),pMolB=pR(1),pICMS=pR(2),pInfCO=pR(4),pInfLP=pR(5);
+  const pEq=pR(6),pInfrV=pR(7),pLiqV=pR(11),pKm=pR(16),pIRR=pR(17),pCapex=pR(18),pRev=pR(19);
+  const pPlCap=pR(21),pPlDebt=pR(22),pPlCD=pR(23);
+  // === INDICADORES ===
+  xlSetTitle(ws,0,0,'INDICADORES');
+  const fcRange=xlCell(1,rFC)+':'+xlCell(13,rFC);
+  xlSetCell(ws,iS,0,'VPL');xlSetCell(ws,iS,1,'NPV('+pKm+','+fcRange+')',true,'n');
+  xlSetCell(ws,iS+1,0,'TIR (mensal)');xlSetCell(ws,iS+1,1,'IFERROR(IRR('+fcRange+'),"n/a")',true,'p');
+  xlSetCell(ws,iS+2,0,'TIR (anual)');xlSetCell(ws,iS+2,1,'IFERROR((1+'+xlCell(1,iS+1)+')^12-1,"n/a")',true,'p');
+  const recRange=xlCell(2,rRec)+':'+xlCell(13,rRec),volRange=xlCell(2,rVol)+':'+xlCell(13,rVol);
+  const ebRange=xlCell(2,rEbitda)+':'+xlCell(13,rEbitda),rlRange=xlCell(2,rRL)+':'+xlCell(13,rRL);
+  xlSetCell(ws,iS+3,0,'Volume Total (m³)');xlSetCell(ws,iS+3,1,'SUM('+volRange+')',true,'n');
+  xlSetCell(ws,iS+4,0,'Receita Total');xlSetCell(ws,iS+4,1,'SUM('+recRange+')',true,'n');
+  xlSetCell(ws,iS+5,0,'EBITDA Total');xlSetCell(ws,iS+5,1,'SUM('+ebRange+')',true,'n');
+  xlSetCell(ws,iS+6,0,'Margem EBITDA');xlSetCell(ws,iS+6,1,xlCell(1,iS+5)+'/'+xlCell(1,iS+4),true,'p');
+  xlSetCell(ws,iS+7,0,'Result. Líquido');xlSetCell(ws,iS+7,1,'SUM('+rlRange+')',true,'n');
+  xlSetCell(ws,iS+8,0,'Margem Líquida');xlSetCell(ws,iS+8,1,xlCell(1,iS+7)+'/'+xlCell(1,iS+4),true,'p');
+  xlSetCell(ws,iS+9,0,'CapEx Total');xlSetCell(ws,iS+9,1,'='+pCapex,true,'n');
+  // === PREMISSAS ===
+  xlSetTitle(ws,pTitle,0,'PREMISSAS — Compagás');
+  const prem=[['Preço de venda (R$/m³)',P.pCO,'d2'],['Custo molécula bruto (R$/m³)',P.mol1,'d'],['ICMS capturado',CO_ICMS,'p'],['Custo molécula efetivo','='+pR(1)+'*(1-'+pR(2)+')','d'],['Inflação Compagás (% a.a.)',P.infCO,'p'],['Inflação LP (% a.a.)',P.infLP,'p'],['Custo equipamentos (R$/m³)',P.equipCO,'d2'],['Custo infraestrutura (R$/m³)',P.infrCO,'d2'],['Custo energia (R$/m³)',P.energiaCO,'d2'],['Custo O&M (R$/m³)',P.oemCO,'d2'],['Custo OpEx (R$/m³)',P.opExCO,'d2'],['Custo liquefação total (R$/m³)','=1.05*('+pR(6)+'+'+pR(7)+'+'+pR(8)+'+'+pR(9)+'+'+pR(10)+')','d2'],['Distância (km)',P.distCO,'n'],['Tipo logística',P.logTipoCO==='iso'?'ISOtanque':'Carreta'],['Ke real (% a.a.)',P.ke,'p'],['Ke nominal (% a.a.)',kn,'p'],['Ke mensal',km,'p'],['IR (%)',P.tax,'p'],['CapEx regás (R$)',P.cxCO,'n'],['Revenda equip. (R$)',P.rvCO,'n'],['Modelo',real?'Real':'Nominal'],['Cap. planta PR (m³/dia)',PL.PR,'n'],['Dívida planta PR (R$)',DEBT_PR,'n'],['Custo dívida PR (% a.a.)',CD_PR,'p']];
+  xlAddPrem(ws,prem,pS);
+  // === FLUXO DE CAIXA ===
+  xlSetTitle(ws,fTitle,0,'FLUXO DE CAIXA MENSAL');
+  xlSetHdr(ws,hdrR,0,'');xlSetHdr(ws,hdrR,1,'Investim.');
+  for(let t=0;t<12;t++) xlSetHdr(ws,hdrR,t+2,CO_M[t]);
+  ['Dias no mês','Volume diário (m³/dia)','Volume total (m³)','Preço de venda (R$/m³)','Receita','C. Molécula unit. (R$/m³)','C. Molécula','C. Liquefação unit. (R$/m³)','C. Liquefação','C. Logística','Regás + Fixo','EBITDA','Amortização','Juros','Lucro tributável','IR','Resultado líquido','Fluxo de caixa'].forEach((l,i)=>xlSetCell(ws,hdrR+1+i,0,l));
+  xlSetCell(ws,rFC,1,-P.cxCO,false,'n');
+  for(let t=0;t<12;t++){
+    const c=t+2;xlSetCell(ws,rVd,c,CO_VD[t],false,'n');xlSetCell(ws,rDias,c,CO_D[t],false,'n');
+    xlSetCell(ws,rVol,c,xlCell(c,rVd)+'*'+xlCell(c,rDias),true,'n');
+    if(!real&&t===11) xlSetCell(ws,rPreco,c,pPreco+'*(1+'+pInfLP+')',true,'d2');
+    else xlSetCell(ws,rPreco,c,'='+pPreco,true,'d2');
+    xlSetCell(ws,rRec,c,xlCell(c,rPreco)+'*'+xlCell(c,rVol),true,'n');
+    if(!real&&t>=9) xlSetCell(ws,rMolU,c,pMolB+'*(1+'+pInfCO+')*(1-'+pICMS+')',true,'d');
+    else xlSetCell(ws,rMolU,c,pMolB+'*(1-'+pICMS+')',true,'d');
+    xlSetCell(ws,rMol,c,xlCell(c,rMolU)+'*'+xlCell(c,rVol),true,'n');
+    const infF=real?'1':'(1+'+t+'/12*'+pInfCO+')';
+    xlSetCell(ws,rLiqU,c,pLiqV+'*'+infF,true,'d');
+    xlSetCell(ws,rLiq,c,xlCell(c,rLiqU)+'*'+xlCell(c,rVol),true,'n');
+    const infCo=real?1:1+(t/12)*P.infCO;
+    xlSetCell(ws,rLog,c,coLog(CO_VD[t],CO_D[t],P.distCO,P.logTipoCO)*infCo,false,'n');
+    const nOp=t<3?2:4;
+    xlSetCell(ws,rRegas,c,'('+ISO_COST_M+'*'+CO_ISO+'+'+OP_COST_M+'*'+nOp+')*'+infF,true,'n');
+    xlSetCell(ws,rEbitda,c,xlCell(c,rRec)+'-'+xlCell(c,rMol)+'-'+xlCell(c,rLiq)+'-'+xlCell(c,rLog)+'-'+xlCell(c,rRegas),true,'n');
+    xlSetCell(ws,rAmort,c,xlCell(c,rVd)+'/'+pPlCap+'*'+pPlDebt+'/10/12',true,'n');
+    const cdEff=real?'((1+'+pPlCD+')/(1+'+pInfCO+')-1)':pPlCD;
+    xlSetCell(ws,rJuros,c,xlCell(c,rVd)+'/'+pPlCap+'*'+pPlDebt+'*((1+'+cdEff+')^(1/12)-1)',true,'n');
+    xlSetCell(ws,rLT,c,xlCell(c,rEbitda)+'-'+xlCell(c,rAmort)+'-'+xlCell(c,rJuros),true,'n');
+    xlSetCell(ws,rIR,c,'IF('+xlCell(c,rLT)+'>0,'+xlCell(c,rLT)+'*'+pIRR+',0)',true,'n');
+    xlSetCell(ws,rRL,c,xlCell(c,rEbitda)+'-'+xlCell(c,rAmort)+'-'+xlCell(c,rJuros)+'-'+xlCell(c,rIR),true,'n');
+    if(t===11) xlSetCell(ws,rFC,c,xlCell(c,rRL)+'+'+pRev,true,'n');
+    else xlSetCell(ws,rFC,c,'='+xlCell(c,rRL),true,'n');
+  }
+  [rVd,rVol,rRec,rEbitda,rRL,rFC].forEach(r=>xlBoldRow(ws,r,14));
+  xlFinalise(ws,rFC+1,14);
+  XLSX.utils.book_append_sheet(wb,ws,'Compagás');
+}
+
+function exportCCSheet(wb,cc,P,real){
+  const cp=getCCParams(cc);const res=R[cc.id];if(!res)return;
+  const dur=cc.duration;const monthly=cc.isMonthly;const plant=PLANT_DATA[cc.plant||'BA'];
+  const kn=real?P.ke:(1+P.ke)*(1+P.infLP)-1;const ws={};
+  const nInd=9,nPrem=11;
+  const iS=2,pTitle=iS+nInd+1,pS=pTitle+1;
+  const fTitle=pS+nPrem+1,hdrR=fTitle+1;
+  const rVol=hdrR+1,rRec=hdrR+2,rMol=hdrR+3,rLiq=hdrR+4,rLog=hdrR+5,rReg=hdrR+6,rEb=hdrR+7,rAm=hdrR+8,rJu=hdrR+9,rLT=hdrR+10,rIRr=hdrR+11,rRL=hdrR+12,rFC=hdrR+13;
+  const pR=i=>'$B$'+(pS+i+1);
+  const pKn=pR(5),pIRx=pR(6),pCx=pR(7);
+  // === INDICADORES ===
+  xlSetTitle(ws,0,0,'INDICADORES');
+  const fcR=xlCell(1,rFC)+':'+xlCell(dur+1,rFC);
+  xlSetCell(ws,iS,0,'VPL');xlSetCell(ws,iS,1,'NPV('+pKn+','+fcR+')',true,'n');
+  xlSetCell(ws,iS+1,0,'TIR');xlSetCell(ws,iS+1,1,'IFERROR(IRR('+fcR+'),"n/a")',true,'p');
+  const vR=xlCell(2,rVol)+':'+xlCell(dur+1,rVol),rR=xlCell(2,rRec)+':'+xlCell(dur+1,rRec);
+  const eR=xlCell(2,rEb)+':'+xlCell(dur+1,rEb),rlR=xlCell(2,rRL)+':'+xlCell(dur+1,rRL);
+  xlSetCell(ws,iS+2,0,'Volume Total');xlSetCell(ws,iS+2,1,'SUM('+vR+')',true,'n');
+  xlSetCell(ws,iS+3,0,'Receita Total');xlSetCell(ws,iS+3,1,'SUM('+rR+')',true,'n');
+  xlSetCell(ws,iS+4,0,'EBITDA Total');xlSetCell(ws,iS+4,1,'SUM('+eR+')',true,'n');
+  xlSetCell(ws,iS+5,0,'Margem EBITDA');xlSetCell(ws,iS+5,1,xlCell(1,iS+4)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+6,0,'Result. Líquido');xlSetCell(ws,iS+6,1,'SUM('+rlR+')',true,'n');
+  xlSetCell(ws,iS+7,0,'Margem Líquida');xlSetCell(ws,iS+7,1,xlCell(1,iS+6)+'/'+xlCell(1,iS+3),true,'p');
+  xlSetCell(ws,iS+8,0,'CapEx');xlSetCell(ws,iS+8,1,'='+pCx,true,'n');
+  // === PREMISSAS ===
+  xlSetTitle(ws,pTitle,0,'PREMISSAS — '+cc.name);
+  const prem=[['Preço de venda',cp.price,'d2'],['Custo molécula',cp.mol,'d'],['Inflação LP',P.infLP,'p'],['Custo liquefação',cp.liq,'d2'],['Distância (km)',cp.dist,'n'],['Ke nominal',kn,'p'],['IR',P.tax,'p'],['CapEx',cp.capex,'n'],['Cap. planta',plant.cap,'n'],['Dívida planta',plant.debt*1e6,'n'],['Custo dívida',plant.cd/100,'p']];
+  xlAddPrem(ws,prem,pS);
+  // === FLUXO DE CAIXA ===
+  xlSetTitle(ws,fTitle,0,monthly?'FLUXO MENSAL':'FLUXO ANUAL');
+  xlSetHdr(ws,hdrR,0,'');xlSetHdr(ws,hdrR,1,'Investim.');
+  for(let t=0;t<dur;t++) xlSetHdr(ws,hdrR,t+2,monthly?'M'+(t+1):'A'+(t+1));
+  ['Volume','Receita','C. Molécula','C. Liquefação','C. Logística','Regás+Fixo','EBITDA','Amortização','Juros','Lucro trib.','IR','Result. líq.','Fluxo caixa'].forEach((l,i)=>xlSetCell(ws,hdrR+1+i,0,l));
+  xlSetCell(ws,rFC,1,-cp.capex,false,'n');
+  for(let t=0;t<dur;t++){
+    const c=t+2;const pp=res.p[t];if(!pp)continue;
+    xlSetCell(ws,rVol,c,pp.v,false,'n');xlSetCell(ws,rRec,c,pp.rc,false,'n');xlSetCell(ws,rMol,c,pp.cm,false,'n');xlSetCell(ws,rLiq,c,pp.cl,false,'n');
+    xlSetCell(ws,rLog,c,pp.cg,false,'n');xlSetCell(ws,rReg,c,pp.cr||pp.crg||0,false,'n');
+    xlSetCell(ws,rEb,c,xlCell(c,rRec)+'-'+xlCell(c,rMol)+'-'+xlCell(c,rLiq)+'-'+xlCell(c,rLog)+'-'+xlCell(c,rReg),true,'n');
+    xlSetCell(ws,rAm,c,pp.am,false,'n');xlSetCell(ws,rJu,c,pp.ju,false,'n');
+    xlSetCell(ws,rLT,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu),true,'n');
+    xlSetCell(ws,rIRr,c,'IF('+xlCell(c,rLT)+'>0,'+xlCell(c,rLT)+'*'+pIRx+',0)',true,'n');
+    xlSetCell(ws,rRL,c,xlCell(c,rEb)+'-'+xlCell(c,rAm)+'-'+xlCell(c,rJu)+'-'+xlCell(c,rIRr),true,'n');
+    xlSetCell(ws,rFC,c,'='+xlCell(c,rRL),true,'n');
+  }
+  [rVol,rRec,rEb,rRL,rFC].forEach(r=>xlBoldRow(ws,r,dur+2));
+  xlFinalise(ws,rFC+1,dur+2);
+  XLSX.utils.book_append_sheet(wb,ws,cc.name.substring(0,31));
+}
+
+// ===================== END EXPORT =====================
 
 // === INIT ===
 // Build initial hidden inputs for shared premissas
