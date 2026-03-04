@@ -229,9 +229,9 @@ const fmtR2=v=>'R$ '+fmt(v,2);
 
 // === DEFAULTS ===
 const D={
-  mol1:1.90,mol2:2.15,
+  mol1:1.9939,
   molBA:2.0995701433522,molCE:1.55504137928462,
-  pCO:3.84,pBA:3.6792701433522,pCE:3.30554137928462,
+  pCO:3.847,pBA:3.6792701433522,pCE:3.30554137928462,
   infLP:3.5,infCO:4.4,
   ke:11.59,
   liqCO:0.98,liqBA:0.90,liqCE:0.99,
@@ -242,7 +242,7 @@ const D={
   tax:34,
   cxCO:4.58,cxBA:3.18,cxCE:5.16231952, // CapEx regás Cegás: civil 1.197.909 + montagem/eletro 1.386.660,52 + equip./inst. 2.577.750
   rvCO:3.48,rvCE:3.10,
-  molScen:'both',hCE:'10',
+  hCE:'10',
   logTipoCO:'iso',logTipoBA:'iso',logTipoCE:'carreta',
   distCO:343,distBA:240,distCE:240,
   modeloRealNominal:'nominal'
@@ -276,6 +276,7 @@ const CD_PR=0.1425,CD_BA=0.107,CD_RN=0.117;   // custo da dívida (% a.a.): PR 1
 // Custo de regás — parâmetros ISO/operador (R$/mês)
 const ISO_COST_M=11000;
 const OP_COST_M=6500;
+const CO_ICMS=0.0581;     // Compagás: desconto ICMS capturado (5,81%)
 const CO_ISO=2,CO_OP=2;   // Compagás: fixo 2 ISOs, 2 operadores
 const BA_OP=2;            // Bahiagás: 2 operadores; ISOs: anos 1–3 = 1, anos 4–10 = 2
 const CE_ISO=3,CE_OP=4;   // Cegás: fixo 3 ISOs, 4 operadores
@@ -328,37 +329,27 @@ function calcIRR(cf){let r=0.1;for(let i=0;i<300;i++){let n=0,dn=0;for(let j=0;j
 
 let R={},charts={},curTab='consolidado';
 
+function _v(id,fallback){const h=$h(id);if(h)return +h.value;const e=$(id);return e?+e.value:(fallback??0);}
 function getP(){
-  // BAHIAGÁS – componentes do custo de liquefação
-  let equipBA=+($('equipBA')?.value??D.equipBA),
-      infrBA=+($('infrBA')?.value??D.infrBA),
-      energiaBA=+($('energiaBA')?.value??D.energiaBA),
-      oemBA=+($('oemBA')?.value??D.oemBA),
-      opExBA=+($('opExBA')?.value??D.opExBA);
+  let equipBA=_v('equipBA',D.equipBA),infrBA=_v('infrBA',D.infrBA),energiaBA=_v('energiaBA',D.energiaBA),oemBA=_v('oemBA',D.oemBA),opExBA=_v('opExBA',D.opExBA);
   let liqBA=1.05*(equipBA+infrBA+energiaBA+oemBA+opExBA);
-
-  // CEGÁS – componentes do custo de liquefação
-  let equipCE=+($('equipCE')?.value??D.equipCE),
-      infrCE=+($('infrCE')?.value??D.infrCE),
-      energiaCE=+($('energiaCE')?.value??D.energiaCE),
-      oemCE=+($('oemCE')?.value??D.oemCE),
-      opExCE=+($('opExCE')?.value??D.opExCE);
+  let equipCE=_v('equipCE',D.equipCE),infrCE=_v('infrCE',D.infrCE),energiaCE=_v('energiaCE',D.energiaCE),oemCE=_v('oemCE',D.oemCE),opExCE=_v('opExCE',D.opExCE);
   let liqCE=1.05*(equipCE+infrCE+energiaCE+oemCE+opExCE);
 
   return{
-    mol1:+$('mol1').value,mol2:+$('mol2').value,molBA:+$('molBA').value,molCE:+$('molCE').value,
-    pCO:+$('pCO').value,pBA:+$('pBA').value,pCE:+$('pCE').value,
-    infLP:+$('infLP').value/100,infCO:+$('infCO').value/100,ke:+$('ke').value/100,tax:+$('tax').value/100,
-    liqCO:+$('liqCO').value,liqBA,liqCE,
-    equipCO:+($('equipCO')?.value??D.equipCO),infrCO:+($('infrCO')?.value??D.infrCO),
+    mol1:_v('mol1',D.mol1),molBA:_v('molBA',D.molBA),molCE:_v('molCE',D.molCE),
+    pCO:_v('pCO',D.pCO),pBA:_v('pBA',D.pBA),pCE:_v('pCE',D.pCE),
+    infLP:_v('infLP',D.infLP)/100,infCO:_v('infCO',D.infCO)/100,ke:_v('ke',D.ke)/100,tax:_v('tax',D.tax)/100,
+    liqCO:_v('liqCO',D.liqCO),liqBA,liqCE,
+    equipCO:_v('equipCO',D.equipCO),infrCO:_v('infrCO',D.infrCO),
     equipBA,infrBA,energiaBA,oemBA,opExBA,
     equipCE,infrCE,energiaCE,oemCE,opExCE,
-    cdBA:+$('cdBA').value/100,cdCE:+$('cdCE').value/100,
-    cxCO:+$('cxCO').value*1e6,cxBA:+$('cxBA').value*1e6,cxCE:+$('cxCE').value*1e6,
-    rvCO:+$('rvCO').value*1e6,rvCE:+$('rvCE').value*1e6,
-    sc:$('molScen').value,hCE:+$('hCE').value,
+    cdBA:_v('cdBA',D.cdBA)/100,cdCE:_v('cdCE',D.cdCE)/100,
+    cxCO:_v('cxCO',D.cxCO)*1e6,cxBA:_v('cxBA',D.cxBA)*1e6,cxCE:_v('cxCE',D.cxCE)*1e6,
+    rvCO:_v('rvCO',D.rvCO)*1e6,rvCE:_v('rvCE',D.rvCE)*1e6,
+    hCE:_v('hCE',10),
     logTipoCO:$('logTipoCO')?.value||D.logTipoCO,logTipoBA:$('logTipoBA')?.value||D.logTipoBA,logTipoCE:$('logTipoCE')?.value||D.logTipoCE,
-    distCO:+($('distCO')?.value??D.distCO),distBA:+($('distBA')?.value??D.distBA),distCE:+($('distCE')?.value??D.distCE),
+    distCO:_v('distCO',D.distCO),distBA:_v('distBA',D.distBA),distCE:_v('distCE',D.distCE),
     modeloRealNominal:$('modeloRealNominal')?.value||D.modeloRealNominal
   };
 }
@@ -380,9 +371,9 @@ function recalc(){
   let c1={p:[],tR:0,tE:0,tS:0,fl:[-P.cxCO]};
   for(let t=0;t<12;t++){
     let v=CO_VD[t]*CO_D[t],pr=P.pCO;
-    if(!real&&t===11)pr=P.pCO*(1+P.infCO);
-    let rc=pr*v,mr=P.mol1;
-    if(!real&&t>=9)mr=P.mol1*(1+P.infLP);
+    if(!real&&t===11)pr=P.pCO*(1+P.infLP);
+    let rc=pr*v,mr=P.mol1*(1-CO_ICMS);
+    if(!real&&t>=9)mr=P.mol1*(1+P.infCO)*(1-CO_ICMS);
     let infCo=(real?1:1+(t/12)*P.infCO),
         cm=mr*v,
         cl=(P.liqCO-P.equipCO-P.infrCO)*v*infCo,
@@ -399,30 +390,6 @@ function recalc(){
     c1.tR+=rc;c1.tE+=eb;c1.tS+=sl;c1.fl.push(sl);
   }
   c1.fl[12]+=P.rvCO;c1.vpl=0;for(let i=0;i<c1.fl.length;i++)c1.vpl+=c1.fl[i]/Math.pow(1+km,i+1);c1.tir=calcIRR(c1.fl);c1.mE=c1.tR>0?c1.tE/c1.tR:0;c1.mL=c1.tR>0?c1.tS/c1.tR:0;
-
-  // COMPAGÁS C2
-  let c2={p:[],tR:0,tE:0,tS:0,fl:[-P.cxCO]};
-  for(let t=0;t<12;t++){
-    let v=CO_VD[t]*CO_D[t],pr=P.pCO;
-    if(!real&&t===11)pr=P.pCO*(1+P.infCO);
-    let rc=pr*v,mr=P.mol2;
-    if(!real&&t>=7)mr=P.mol2*(1+P.infLP);
-    let infCo=(real?1:1+(t/12)*P.infCO),
-        cm=mr*v,
-        cl=(P.liqCO-P.equipCO-P.infrCO)*v*infCo,
-        nOp_co=t<3?2:4,
-        crBase=ISO_COST_M*CO_ISO+OP_COST_M*nOp_co,
-        cr=crBase*infCo,
-        cg=coLog(CO_VD[t],CO_D[t],P.distCO,P.logTipoCO)*infCo;
-    let cdPR_eff=real?((1+CD_PR)/(1+P.infCO)-1):CD_PR,
-        am=0,ju=(CO_VD[t]/PL.PR)*DEBT_PR*(cdPR_eff/12),
-        eb=rc-cm-cl-cr-cg,
-        lt=eb-am-ju,tr=lt>0?lt*P.tax:0,
-        sl=eb-ju-tr,mo=rc>0?eb/rc:0;
-    c2.p.push({l:CO_M[t],v,pr,rc,cm,cl,cg,cr,eb,am,ju,tr,sl,mo});
-    c2.tR+=rc;c2.tE+=eb;c2.tS+=sl;c2.fl.push(sl);
-  }
-  c2.fl[12]+=P.rvCO;c2.vpl=0;for(let i=0;i<c2.fl.length;i++)c2.vpl+=c2.fl[i]/Math.pow(1+km,i+1);c2.tir=calcIRR(c2.fl);c2.mE=c2.tR>0?c2.tE/c2.tR:0;c2.mL=c2.tR>0?c2.tS/c2.tR:0;
 
   // BAHIAGÁS — ano 1: preço inicial; do ano 2 em diante: p0*(1+soma inflações)*(1-mol/p0)
   let ba={p:[],tR:0,tE:0,tS:0,fl:[-P.cxBA]};
@@ -473,7 +440,7 @@ function recalc(){
   ce.vpl=0;for(let i=0;i<ce.fl.length;i++)ce.vpl+=ce.fl[i]/Math.pow(1+kn,i+1);
   ce.tir=calcIRR(ce.fl);ce.mE=ce.tR>0?ce.tE/ce.tR:0;ce.mL=ce.tR>0?ce.tS/ce.tR:0;
 
-  R={c1,c2,ba,ce,P,kn};for(const cc of CC)R[cc.id]=calcCC(cc,P);render();
+  R={c1,ba,ce,P,kn};for(const cc of CC)R[cc.id]=calcCC(cc,P);render();
 }
 
 // === TABS ===
@@ -499,14 +466,9 @@ function render(){
 // === PREMISSAS SIDEBAR (builds inside each view) ===
 function premCO(P){
   return `<section class="card scenario-premissas"><h2>Premissas — Compagás</h2>
-  <div class="row"><label><span>Cenário de molécula</span></label>
-    <select id="molScen" style="width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;font-size:13px;">
-      <option value="both" ${P.sc==='both'?'selected':''}>Ambos (R$1,90 &amp; R$2,15)</option>
-      <option value="c1" ${P.sc==='c1'?'selected':''}>Apenas R$ 1,90/m³</option>
-      <option value="c2" ${P.sc==='c2'?'selected':''}>Apenas R$ 2,15/m³</option></select></div>
-  ${sl('mol1','Molécula Cen.1 (R$/m³)',P.mol1,1,3,0.01,2,'')}\
-  ${sl('mol2','Molécula Cen.2 (R$/m³)',P.mol2,1,3,0.01,2,'')}\
-  ${sl('pCO','Preço de venda (R$/m³)',P.pCO,2,6,0.01,2,'')}\
+  ${sl('mol1','Custo molécula (R$/m³)',P.mol1,1,3,0.0001,4,'')}\
+  <div class="small" style="margin:2px 0 8px;color:#6b7280;">× (1 − ${(CO_ICMS*100).toFixed(2)}% ICMS) = R$ <span id="molCO_eff">${(P.mol1*(1-CO_ICMS)).toFixed(4)}</span>/m³ efetivo</div>\
+  ${sl('pCO','Preço de venda (R$/m³)',P.pCO,2,6,0.001,4,'')}\
   ${sl('infCO','Inflação Compagás (% a.a.)',P.infCO*100,0,10,0.1,1,'%')}\
   <div class="row"><label><span>Tipo logística</span></label>
     <select id="logTipoCO" style="width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;font-size:13px;">
@@ -591,7 +553,22 @@ function cv(v){return `<span class="${v>=0?'pos':'neg'}">${fmtM(v)}</span>`;}
 
 // === TABLE ===
 function tbl(ps){
-  let h='<div style="overflow:auto;margin-top:8px;"><table><thead><tr><th style="text-align:left">Período</th><th>Vol.(m³)</th><th>Preço</th><th>Receita</th><th>C.Mol.</th><th>C.Liq.</th><th>C.Log.</th><th>Regás+Fix</th><th>EBITDA</th><th>Mg.%</th><th>Amort.</th><th>Juros</th><th>Trib.</th><th>Saldo Líq.</th></tr></thead><tbody>';
+  let h='<div style="overflow:auto;margin-top:8px;"><table><thead><tr>'
+    +'<th style="text-align:left">Período</th>'
+    +'<th title="Volume do período em m³">Vol.(m³)</th>'
+    +'<th title="Preço médio do gás no período (R$/m³)">Preço</th>'
+    +'<th title="Receita = Preço do gás (R$/m³) × volume do período (m³)">Receita</th>'
+    +'<th title="C.Mol. = Custo de molécula (R$/m³) × (1 − ICMS) × volume do período (m³). Compagás: ICMS capturado = 5,81%">C.Mol.</th>'
+    +'<th title="C.Liq. = (Custo de liquefação/m³ − custos de equipamentos/m³ − custos de infraestrutura/m³) × volume do período × (1 + soma das inflações)">C.Liq.</th>'
+    +'<th title="C.Log. = Custo fixo logístico (carreta/ISO) × nº de unidades + custo variável (R$/m³·km) × distância × volume transportado (corrigidos por inflação)">C.Log.</th>'
+    +'<th title="Regás+Fix = Custo mensal ISO × nº de ISOs × 12 + Custo mensal operador × nº de operadores × 12 (corrigidos por inflação)">Regás+Fix</th>'
+    +'<th title="EBITDA = Receita − C.Mol. − C.Liq. − C.Log. − Regás+Fix">EBITDA</th>'
+    +'<th title="Margem EBITDA = EBITDA ÷ Receita">Mg.%</th>'
+    +'<th title="Amort. = (Volume diário do ano ÷ capacidade da planta) × (dívida total da planta ÷ duração do contrato)">Amort.</th>'
+    +'<th title="Juros = (Volume diário ÷ capacidade da planta) × dívida total da planta × custo da dívida (real ou nominal)">Juros</th>'
+    +'<th title="Tributos sobre o lucro (quando EBITDA − amortização − juros &gt; 0)">Trib.</th>'
+    +'<th title="Saldo Líquido = EBITDA − amortização − juros − tributos">Saldo Líq.</th>'
+    +'</tr></thead><tbody>';
   for(const p of ps){
     h+=`<tr><td style="text-align:left;font-weight:600;color:var(--muted)">${p.l}</td><td>${fmt(p.v)}</td><td>${p.pr.toFixed(2)}</td><td>${fmtT(p.rc)}</td><td class="neg">${fmtT(-p.cm)}</td><td class="neg">${fmtT(-p.cl)}</td><td class="neg">${fmtT(-p.cg)}</td><td class="neg">${fmtT(-(p.crg||p.cr))}</td><td class="${p.eb>=0?'pos':'neg'}">${fmtT(p.eb)}</td><td>${fmtPct(p.mo)}</td><td class="neg">${fmtT(-p.am)}</td><td class="neg">${fmtT(-p.ju)}</td><td class="neg">${fmtT(-p.tr)}</td><td class="${p.sl>=0?'pos':'neg'}">${fmtT(p.sl)}</td></tr>`;
   }return h+'</tbody></table></div>';}
@@ -633,31 +610,21 @@ function tblLiqVars(P,contract){
 
 // === RENDERS ===
 function rCO(){
-  const{c1,c2,P,kn}=R;let sc=P.sc;
+  const{c1,P,kn}=R;
   let kh='<div class="kpis">';
-  if(sc!=='c2'){
-    kh+=kc('NPV (Cen.1) @ '+fmtPctBr(kn)+' '+(P.modeloRealNominal==='real'?'real':'nominal'),fmtM(c1.vpl),c1.vpl>=0?'kpi-sage':'kpi-blush');
-    kh+=kc('TIR Cen.1',fmtPct(c1.tir),c1.tir>P.ke?'kpi-sage':'kpi-blush');
-    kh+=kc('Vol. Total (C1)',fmt(c1.p.reduce((s,p)=>s+p.v,0)/1e6,2)+' MM m³','kpi-celeste');
-    kh+=kc('Receita Total (C1)',fmtM(c1.tR),'kpi-celeste');
-    kh+=kcs('EBITDA Total (C1)',fmtM(c1.tE),'Margem EBITDA (%): '+fmtPct(c1.mE),'kpi-sand');
-    kh+=kcs('Result. Líquido (C1)',fmtM(c1.tS),'Margem líquida (%): '+fmtPct(c1.mL),c1.tS>=0?'kpi-sage':'kpi-blush');
-    kh+=kc('CapEx Total (C1)',fmtM(P.cxCO),'kpi-sand');
-  }
-  if(sc!=='c1'){
-    kh+=kc('NPV (Cen.2) @ '+fmtPctBr(kn)+' '+(P.modeloRealNominal==='real'?'real':'nominal'),fmtM(c2.vpl),c2.vpl>=0?'kpi-sage':'kpi-blush');
-    kh+=kc('TIR Cen.2',fmtPct(c2.tir),c2.tir>P.ke?'kpi-sage':'kpi-blush');
-    kh+=kc('Vol. Total (C2)',fmt(c2.p.reduce((s,p)=>s+p.v,0)/1e6,2)+' MM m³','kpi-celeste');
-    kh+=kcs('EBITDA Total (C2)',fmtM(c2.tE),'Margem EBITDA (%): '+fmtPct(c2.mE),'kpi-sand');
-  }
+  kh+=kc('NPV @ '+fmtPctBr(kn)+' '+(P.modeloRealNominal==='real'?'real':'nominal'),fmtM(c1.vpl),c1.vpl>=0?'kpi-sage':'kpi-blush');
+  kh+=kc('TIR Alavancada',fmtPct(c1.tir),c1.tir>P.ke?'kpi-sage':'kpi-blush');
+  kh+=kc('Vol. Total',fmt(c1.p.reduce((s,p)=>s+p.v,0)/1e6,2)+' MM m³','kpi-celeste');
+  kh+=kc('Receita Total',fmtM(c1.tR),'kpi-celeste');
+  kh+=kcs('EBITDA Total',fmtM(c1.tE),'Margem EBITDA (%): '+fmtPct(c1.mE),'kpi-sand');
+  kh+=kcs('Result. Líquido',fmtM(c1.tS),'Margem líquida (%): '+fmtPct(c1.mL),c1.tS>=0?'kpi-sage':'kpi-blush');
+  kh+=kc('CapEx Total',fmtM(P.cxCO),'kpi-sand');
   kh+='</div>';
-  if(sc!=='c1'){
-    kh+='<div class="note-warn" style="margin-top:12px;">⚠️ No cenário de molécula a R$ '+P.mol2.toFixed(2)+'/m³, não há acúmulo de saldo para pagamento do principal pós-carência (2 anos). Considera-se somente juros. Renovação contratual inviável neste preço.</div>';
-  }
-  let th='<div class="flex"><h3 style="margin:0">Fluxo de Caixa — Cen. 1 (R$ '+P.mol1.toFixed(2)+'/m³)</h3><div class="small">Mensal, fev/26–jan/27</div></div>'+tbl(c1.p);
+  let th='<div class="flex"><h3 style="margin:0">Fluxo de Caixa</h3><div class="small">Mensal, fev/26–jan/27</div></div>'+tbl(c1.p);
   if($('out-co')){
     $('out-co').innerHTML=kh;$('tbl-co').innerHTML=th;
     let lv=$('liqvars-co');if(lv)lv.innerHTML='<h3>Variáveis do custo de liquefação</h3>'+tblLiqVars(P,'CO');
+    let me=$('molCO_eff');if(me)me.textContent=(P.mol1*(1-CO_ICMS)).toFixed(4);
     mkBar('chCO1',c1.p.map(p=>p.l),c1.p.map(p=>p.eb));mkLine('chCO2',c1.p.map(p=>p.l),c1.fl);
     return;
   }
@@ -666,7 +633,7 @@ function rCO(){
   h+='<section class="grid scenario-outputs" id="out-co">'+kh+'</section>';
   h+='<section class="card scenario-table" id="tbl-co">'+th+'</section>';
   h+='<section class="card scenario-liqvars" id="liqvars-co"><h3>Variáveis do custo de liquefação</h3>'+tblLiqVars(P,'CO')+'</section>';
-  h+='<section class="card scenario-charts"><h3>EBITDA Mensal (Cen.1)</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCO1"></canvas></div></div><h3 style="margin-top:16px;">Fluxo Acumulado</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCO2"></canvas></div></div></section>';
+  h+='<section class="card scenario-charts"><h3>EBITDA Mensal</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCO1"></canvas></div></div><h3 style="margin-top:16px;">Fluxo Acumulado</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCO2"></canvas></div></div></section>';
   h+='</div>';
   $('view-compagas').innerHTML=h;bindSliders();
   mkBar('chCO1',c1.p.map(p=>p.l),c1.p.map(p=>p.eb));mkLine('chCO2',c1.p.map(p=>p.l),c1.fl);
@@ -731,11 +698,10 @@ function rCE(){
 }
 const sumSel={co:true,ba:true,ce:true};
 function buildSomaCard(){
-  const{c1,c2,ba,ce,P}=R;
-  const best=c1.vpl>=c2.vpl?c1:c2;const bestLbl=c1.vpl>=c2.vpl?'Cen.1':'Cen.2';
-  const vCO=best.p.reduce((s,p)=>s+p.v,0),vBA=ba.p.reduce((s,p)=>s+p.v,0),vCE=ce.p.reduce((s,p)=>s+p.v,0);
+  const{c1,ba,ce,P}=R;
+  const vCO=c1.p.reduce((s,p)=>s+p.v,0),vBA=ba.p.reduce((s,p)=>s+p.v,0),vCE=ce.p.reduce((s,p)=>s+p.v,0);
   let sVpl=0,sE=0,sR=0,sS=0,sCx=0,sV=0;
-  if(sumSel.co){sVpl+=best.vpl;sE+=best.tE;sR+=best.tR;sS+=best.tS;sCx+=P.cxCO;sV+=vCO;}
+  if(sumSel.co){sVpl+=c1.vpl;sE+=c1.tE;sR+=c1.tR;sS+=c1.tS;sCx+=P.cxCO;sV+=vCO;}
   if(sumSel.ba){sVpl+=ba.vpl;sE+=ba.tE;sR+=ba.tR;sS+=ba.tS;sCx+=P.cxBA;sV+=vBA;}
   if(sumSel.ce){sVpl+=ce.vpl;sE+=ce.tE;sR+=ce.tR;sS+=ce.tS;sCx+=P.cxCE;sV+=vCE;}
   const ccVols={};
@@ -745,7 +711,6 @@ function buildSomaCard(){
   let s=`<h4>📊 Soma Total</h4><div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;">${ck('co','Compagás')}${ck('ba','Bahiagás')}${ck('ce','Cegás')}`;
   for(const cc of CC) s+=ck(cc.id,cc.name);
   s+='</div>';
-  if(sumSel.co) s+=cr('Compagás',bestLbl+' (melhor VPL)');
   s+=cr('VPL Total',fmtM(sVpl),sVpl)+cr('CapEx Total',fmtM(sCx));
   if(sV>0){
     s+=cr('Vol. Total',fmt(sV/1e6,2)+' MM m³');
@@ -763,38 +728,36 @@ function bindSumChk(){
   });
 }
 function rCons(){
-  const{c1,c2,ba,ce,P,kn}=R;
+  const{c1,ba,ce,P,kn}=R;
   let h='<div class="consol-grid">';
   h+=`<div class="consol-card" style="border:2px solid var(--primary);background:linear-gradient(135deg,#f0fdf4,#fff);" id="soma-card">${buildSomaCard()}</div>`;
-  h+=`<div class="consol-card"><h4>⛽ Compagás (PR)</h4>${cr('Prazo','12 meses')}${cr('Cen.1 — Mol. R$'+P.mol1.toFixed(2),'')}${cr('  VPL',fmtM(c1.vpl),c1.vpl)}${cr('  TIR',fmtPct(c1.tir))}${cr('  Mg. EBITDA',fmtPct(c1.mE))}`;
-  if(P.sc!=='c1') h+=`${cr('Cen.2 — Mol. R$'+P.mol2.toFixed(2),'')}${cr('  VPL',fmtM(c2.vpl),c2.vpl)}${cr('  TIR',fmtPct(c2.tir))}${cr('  Mg. EBITDA',fmtPct(c2.mE))}`;
-  h+=cr('CapEx',fmtM(P.cxCO))+'</div>';
+  h+=`<div class="consol-card"><h4>⛽ Compagás (PR)</h4>${cr('Prazo','12 meses')}${cr('Mol. R$'+P.mol1.toFixed(2),'')}${cr('VPL',fmtM(c1.vpl),c1.vpl)}${cr('TIR',fmtPct(c1.tir))}${cr('Mg. EBITDA',fmtPct(c1.mE))}${cr('CapEx',fmtM(P.cxCO))}</div>`;
   h+=`<div class="consol-card"><h4>⛽ Bahiagás (BA)</h4>${cr('Prazo','10 anos')}${cr('VPL',fmtM(ba.vpl),ba.vpl)}${cr('TIR',fmtPct(ba.tir))}${cr('CapEx',fmtM(P.cxBA))}${cr('EBITDA Total',fmtM(ba.tE))}${cr('Mg. EBITDA',fmtPct(ba.mE))}${cr('Result. Líquido',fmtM(ba.tS),ba.tS)}${cr('% Vol. Planta',fmtPct(ba.p[9].vd/PL.BA))}</div>`;
   h+=`<div class="consol-card"><h4>⛽ Cegás (RN)</h4>${cr('Prazo',P.hCE+' anos')}${cr('VPL',fmtM(ce.vpl),ce.vpl)}${cr('TIR',fmtPct(ce.tir))}${cr('CapEx',fmtM(P.cxCE))}${cr('EBITDA Total',fmtM(ce.tE))}${cr('Mg. EBITDA',fmtPct(ce.mE))}${cr('Result. Líquido',fmtM(ce.tS),ce.tS)}${cr('% Vol. Planta',fmtPct(CE_VD[P.hCE-1]/PL.RN))}</div>`;
   for(const cc of CC){const res=R[cc.id];if(!res)continue;const cp=getCCParams(cc);h+=`<div class="consol-card"><h4>⛽ ${cc.name}</h4>${cr('Prazo',(cc.isMonthly?cc.duration+' meses':cc.duration+' anos'))}${cr('VPL',fmtM(res.vpl),res.vpl)}${cr('TIR',res.tir!=null?fmtPct(res.tir):'n/a')}${cr('CapEx',fmtM(cp.capex))}${cr('EBITDA Total',fmtM(res.tE))}${cr('Mg. EBITDA',fmtPct(res.mE))}${cr('Result. Líquido',fmtM(res.tS),res.tS)}</div>`;}
   h+='</div>';
 
-  h+='<div class="card" style="margin-bottom:16px;"><div class="flex"><h3 style="margin:0">Comparativo por Contrato</h3></div><div style="overflow:auto;margin-top:8px;"><table><thead><tr><th style="text-align:left">Indicador</th><th>Compagás (C1)</th><th>Compagás (C2)</th><th>Bahiagás</th><th>Cegás ('+P.hCE+'a)</th></tr></thead><tbody>';
-  h+=`<tr><td style="text-align:left;font-weight:600;">VPL</td><td>${cv(c1.vpl)}</td><td>${cv(c2.vpl)}</td><td>${cv(ba.vpl)}</td><td>${cv(ce.vpl)}</td></tr>`;
-  h+=`<tr><td style="text-align:left;font-weight:600;">TIR</td><td>${fmtPct(c1.tir)}</td><td>${fmtPct(c2.tir)}</td><td>${fmtPct(ba.tir)}</td><td>${fmtPct(ce.tir)}</td></tr>`;
-  h+=`<tr><td style="text-align:left;font-weight:600;">Margem EBITDA</td><td>${fmtPct(c1.mE)}</td><td>${fmtPct(c2.mE)}</td><td>${fmtPct(ba.mE)}</td><td>${fmtPct(ce.mE)}</td></tr>`;
-  h+=`<tr><td style="text-align:left;font-weight:600;">Result. Líquido</td><td>${cv(c1.tS)}</td><td>${cv(c2.tS)}</td><td>${cv(ba.tS)}</td><td>${cv(ce.tS)}</td></tr>`;
-  h+=`<tr><td style="text-align:left;font-weight:600;">Margem Líquida</td><td>${fmtPct(c1.mL)}</td><td>${fmtPct(c2.mL)}</td><td>${fmtPct(ba.mL)}</td><td>${fmtPct(ce.mL)}</td></tr>`;
+  h+='<div class="card" style="margin-bottom:16px;"><div class="flex"><h3 style="margin:0">Comparativo por Contrato</h3></div><div style="overflow:auto;margin-top:8px;"><table><thead><tr><th style="text-align:left">Indicador</th><th>Compagás</th><th>Bahiagás</th><th>Cegás ('+P.hCE+'a)</th></tr></thead><tbody>';
+  h+=`<tr><td style="text-align:left;font-weight:600;">VPL</td><td>${cv(c1.vpl)}</td><td>${cv(ba.vpl)}</td><td>${cv(ce.vpl)}</td></tr>`;
+  h+=`<tr><td style="text-align:left;font-weight:600;">TIR</td><td>${fmtPct(c1.tir)}</td><td>${fmtPct(ba.tir)}</td><td>${fmtPct(ce.tir)}</td></tr>`;
+  h+=`<tr><td style="text-align:left;font-weight:600;">Margem EBITDA</td><td>${fmtPct(c1.mE)}</td><td>${fmtPct(ba.mE)}</td><td>${fmtPct(ce.mE)}</td></tr>`;
+  h+=`<tr><td style="text-align:left;font-weight:600;">Result. Líquido</td><td>${cv(c1.tS)}</td><td>${cv(ba.tS)}</td><td>${cv(ce.tS)}</td></tr>`;
+  h+=`<tr><td style="text-align:left;font-weight:600;">Margem Líquida</td><td>${fmtPct(c1.mL)}</td><td>${fmtPct(ba.mL)}</td><td>${fmtPct(ce.mL)}</td></tr>`;
   h+='</tbody></table></div></div>';
 
   h+='<div class="consol-charts-grid"><div class="card"><h3>EBITDA Total por Contrato</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCons1"></canvas></div></div></div><div class="card"><h3>VPL por Contrato</h3><div class="chart-scroll"><div class="chart-inner"><canvas id="chCons2"></canvas></div></div></div></div>';
-  h+='<div class="note">Notas: (i) Compagás: contrato mensal (fev/26–jan/27), 2 cenários de molécula; (ii) Bahiagás: contrato 10 anos com ramp-up; (iii) Cegás: contrato 10 anos (ou 5 com revenda); (iv) VPL descontado a Ke nominal; (v) TIR calculada via Newton-Raphson; (vi) custos logísticos proporcionais ao volume; (vii) Compagás Cen.2: não há principal — somente juros.</div>';
+  h+='<div class="note">Notas: (i) Compagás: contrato mensal (fev/26–jan/27); (ii) Bahiagás: contrato 10 anos com ramp-up; (iii) Cegás: contrato 10 anos (ou 5 com revenda); (iv) VPL descontado a Ke nominal; (v) TIR calculada via Newton-Raphson; (vi) custos logísticos proporcionais ao volume.</div>';
   $('view-consolidado').innerHTML=h;
   bindSumChk();
 
   for(let k in charts)if(charts[k])charts[k].destroy();charts={};
-  let cLbl=['Compagás (C1)','Compagás (C2)','Bahiagás','Cegás'],cE=[R.c1.tE,R.c2.tE,R.ba.tE,R.ce.tE],cV=[R.c1.vpl,R.c2.vpl,R.ba.vpl,R.ce.vpl];
+  let cLbl=['Compagás','Bahiagás','Cegás'],cE=[R.c1.tE,R.ba.tE,R.ce.tE],cV=[R.c1.vpl,R.ba.vpl,R.ce.vpl];
   const ccColors=['#e8d5f5','#d5f5e3','#fce4d6','#d5eef5','#f5f0d5'];
   const ccBorders=['#7c3aed','#10b981','#f97316','#0ea5e9','#eab308'];
   for(let i=0;i<CC.length;i++){const res=R[CC[i].id];if(!res)continue;cLbl.push(CC[i].name);cE.push(res.tE);cV.push(res.vpl);}
   let ctx1=document.getElementById('chCons1'),ctx2=document.getElementById('chCons2');
-  const bgE=['#d7e4d3','#e4e7ef','#d6e8f5','#fef7fb',...CC.map((_,i)=>ccColors[i%5])];
-  const bdE=['#059669','#6b7280','#2563eb','#a855f7',...CC.map((_,i)=>ccBorders[i%5])];
+  const bgE=['#d7e4d3','#d6e8f5','#fef7fb',...CC.map((_,i)=>ccColors[i%5])];
+  const bdE=['#059669','#2563eb','#a855f7',...CC.map((_,i)=>ccBorders[i%5])];
   if(ctx1){charts.a=new Chart(ctx1,{type:'bar',data:{labels:cLbl,datasets:[{data:cE,backgroundColor:bgE,borderColor:bdE,borderWidth:2,borderRadius:8}]},options:barOpts()});}
   if(ctx2){charts.b=new Chart(ctx2,{type:'bar',data:{labels:cLbl,datasets:[{data:cV,backgroundColor:cV.map(v=>v>=0?'#d7e4d3':'#fde7da'),borderColor:cV.map(v=>v>=0?'#059669':'#dc2626'),borderWidth:2,borderRadius:8}]},options:barOpts()});}
 }
@@ -806,7 +769,10 @@ function mkBar(id,lb,dt){for(let k in charts)if(charts[k])charts[k].destroy();ch
 function mkLine(id,lb,fl){let c=document.getElementById(id);if(!c)return;let cum=[],s=0;fl.forEach(v=>{s+=v;cum.push(s);});charts[id]=new Chart(c,{type:'line',data:{labels:['Inv.',...lb],datasets:[{data:cum,borderColor:'#111827',backgroundColor:'rgba(17,24,39,0.06)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#111827',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:c=>fmtM(c.raw)}}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7280',font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v<=-1e6?'('+(-v/1e6).toFixed(1)+'M)':v>=1e3?(v/1e3).toFixed(0)+'K':v<=-1e3?'('+(-v/1e3).toFixed(0)+'K)':v<0?'('+(-v)+')':v},grid:{color:'#f3f4f6'}}}}});}
 
 const SHARED_IDS=new Set(['infLP','ke','tax']);
+function $h(id){const el=document.querySelector('#_shared [id="'+id+'"]');return el;}
 function onSlider(e){
+  const hid=$h(e.target.id);
+  if(hid) hid.value=e.target.value;
   if(SHARED_IDS.has(e.target.id)){
     document.querySelectorAll('[id="'+e.target.id+'"]').forEach(el=>{
       if(el!==e.target) el.value=e.target.value;
@@ -1112,10 +1078,9 @@ $('resetBtn').addEventListener('click',()=>{
 // Build initial hidden inputs for shared premissas
 function initInputs(){
   let div=document.createElement('div');div.style.display='none';div.id='_shared';
-  for(let k of ['mol1','mol2','molBA','molCE','pCO','pBA','pCE','infLP','infCO','ke','liqCO','equipCO','infrCO','equipBA','infrBA','energiaBA','oemBA','opExBA','equipCE','infrCE','energiaCE','oemCE','opExCE','cdBA','cdCE','tax','cxCO','cxBA','cxCE','rvCO','rvCE']){
+  for(let k of ['mol1','molBA','molCE','pCO','pBA','pCE','infLP','infCO','ke','liqCO','equipCO','infrCO','equipBA','infrBA','energiaBA','oemBA','opExBA','equipCE','infrCE','energiaCE','oemCE','opExCE','cdBA','cdCE','tax','cxCO','cxBA','cxCE','rvCO','rvCE']){
     let inp=document.createElement('input');inp.type='hidden';inp.id=k;inp.value=D[k];div.appendChild(inp);
   }
-  let sel1=document.createElement('select');sel1.id='molScen';sel1.innerHTML='<option value="both" selected>both</option>';div.appendChild(sel1);
   let sel2=document.createElement('select');sel2.id='hCE';sel2.innerHTML='<option value="10" selected>10</option>';div.appendChild(sel2);
   let sel3=document.createElement('select');sel3.id='modeloRealNominal';sel3.innerHTML='<option value="nominal" selected>nominal</option><option value="real">real</option>';div.appendChild(sel3);
   document.body.appendChild(div);
